@@ -1,0 +1,36 @@
+{{- if .Values.rbac.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ .Values.rbac.name }}
+rules:
+  - apiGroups: [""]
+    resources:
+{{- range .Values.rbac.core.resources }}
+      - {{ . }}
+{{- end }}
+    verbs:
+{{- range .Values.rbac.core.verbs }}
+      - {{ . }}
+{{- end }}
+
+  - apiGroups: ["apps"]
+    resources:
+{{- range .Values.rbac.apps.resources }}
+      - {{ . }}
+{{- end }}
+    verbs:
+{{- range .Values.rbac.apps.verbs }}
+      - {{ . }}
+{{- end }}
+
+  - apiGroups: ["{{ .Values.rbac.mirrorApi.apiGroup }}"]
+    resources:
+{{- range .Values.rbac.mirrorApi.resources }}
+      - {{ . }}
+{{- end }}
+    verbs:
+{{- range .Values.rbac.mirrorApi.verbs }}
+      - {{ . }}
+{{- end }}
+{{- end }}
