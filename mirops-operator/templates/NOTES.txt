@@ -1,0 +1,23 @@
+1. Get the status of your deployment:
+  kubectl get deployment {{ include "mirops.fullname" . }}-controller-manager -n {{ .Release.Namespace }}
+
+2. Check the controller logs:
+  kubectl logs -n {{ .Release.Namespace }} deployment/{{ include "mirops.fullname" . }}-controller-manager
+
+3. Create an UpgradeAnalysis resource:
+  cat <<EOF | kubectl apply -f -
+  apiVersion: mirops.mirops.io/v1
+  kind: UpgradeAnalysis
+  metadata:
+    name: cluster-analysis
+    namespace: {{ .Release.Namespace }}
+  spec:
+    foo: "example-value"
+  EOF
+
+4. Check the status of your UpgradeAnalysis:
+  kubectl get upgradeanalysis -n {{ .Release.Namespace }}
+  kubectl describe upgradeanalysis cluster-analysis -n {{ .Release.Namespace }}
+
+For more information:
+  https://github.com/miropshq/mirops

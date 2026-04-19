@@ -1,0 +1,77 @@
+# Default values for mirops
+# Declare variables to be passed into your templates
+
+# Namespace configuration
+namespace:
+  create: true
+  name: mirops
+
+# Image configuration
+image:
+  repository: ghcr.io/miropshq/mirops
+  pullPolicy: IfNotPresent
+  tag: "dev"
+
+# Number of replicas
+replicaCount: 1
+
+# Service Account configuration
+serviceAccount:
+  create: true
+  name: mirops-controller-manager
+  annotations: {}
+
+# RBAC configuration
+rbac:
+  create: true
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+
+# Container security context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: 500m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 64Mi
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
+
+# Metrics configuration
+metrics:
+  enabled: true
+  port: 8080
+
+# Health probes configuration
+healthProbe:
+  port: 8081
+
+# Leader election
+leaderElection:
+  enabled: true
+  namespace: kube-system
+
+# Log level
+logLevel: info

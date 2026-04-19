@@ -1,0 +1,13 @@
+apiVersion: v2
+name: mirops
+description: A Helm chart for mirops - Kubernetes Upgrade Analysis Operator
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - kubernetes
+  - operator
+  - upgrade-analysis
+maintainers:
+  - name: Mirops Team
+homepage: https://github.com/miropshq/mirops
