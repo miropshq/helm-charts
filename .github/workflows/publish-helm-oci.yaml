@@ -3,11 +3,7 @@ name: Publish Mirops Helm Chart
 on:
   push:
     branches:
-      - main
-    paths:
-      - 'mirops-operator/**'
-      - '.github/workflows/publish-helm-oci.yaml'
-  workflow_dispatch:
+      - development-v2
 
 permissions:
   contents: read
