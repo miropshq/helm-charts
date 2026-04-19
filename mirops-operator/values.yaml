@@ -12,7 +12,17 @@ image:
   pullPolicy: IfNotPresent
   tag: "dev"
 
-# Number of replicas
+# Image pull secrets for private registries
+imagePullSecrets: []
+# - name: ghcr-secret
+
+# Docker credentials for private registries
+registryCredentials:
+  enabled: false
+  registry: ghcr.io
+  username: ""
+  password: "" # Use personal access token (PAT) instead of password
+  email: ""
 replicaCount: 1
 
 # Service Account configuration
