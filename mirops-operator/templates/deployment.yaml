@@ -45,7 +45,7 @@ spec:
         args:
           - --leader-elect
           {{- if .Values.leaderElection.enabled }}
-          - --leader-election-namespace={{ .Values.leaderElection.namespace }}
+          - --leader-elect
           {{- end }}
           - --metrics-bind-address={{ printf ":%d" (.Values.metrics.port | int) }}
           - --health-probe-bind-address={{ printf ":%d" (.Values.healthProbe.port | int) }}
