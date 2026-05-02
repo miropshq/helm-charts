@@ -3,7 +3,9 @@ name: Publish Mirops Helm Chart
 on:
   push:
     branches:
-      - development-v2
+      - main
+    paths:
+      - 'mirops-operator/Chart.yaml'
 
 permissions:
   contents: read
@@ -11,7 +13,7 @@ permissions:
 
 jobs:
   publish:
-    name: Publish Mirops Helm Chart to OCI Registry
+    name: Publish Helm Chart to OCI Registry
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -30,18 +32,18 @@ jobs:
 
       - name: Build and push Helm chart
         working-directory: mirops-operator
-        run: |          
-          # Crear el paquete Helm
-          helm package .
-          
-          # Determinar versión
+        run: |
           CHART_VERSION=$(grep "^version:" Chart.yaml | awk '{print $2}')
           CHART_NAME=$(grep "^name:" Chart.yaml | awk '{print $2}')
-          
-          # Push a OCI registry de forma privada
+
+          helm package .
+
           helm push ${CHART_NAME}-${CHART_VERSION}.tgz oci://ghcr.io/${{ github.repository_owner }}/charts
 
       - name: Logout from GitHub Container Registry
         if: always()
-        run: |
-          helm registry logout ghcr.io
+        run: helm registry logout ghcr.io
+
+      - name: Logout from GitHub Container Registry
+        if: always()
+        run: helm registry logout ghcr.io
