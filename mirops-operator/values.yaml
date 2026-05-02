@@ -78,6 +78,10 @@ metrics:
 healthProbe:
   port: 8081
 
+# Report output configuration
+report:
+  path: /tmp/mirops-report.json
+
 # Leader election
 leaderElection:
   enabled: true
