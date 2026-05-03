@@ -44,24 +44,49 @@ jobs:
           fi
           echo "Version válida: $VERSION"
 
+  sync-crd:
+    name: Sync CRD from Operator Repo
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout operator repo
+        uses: actions/checkout@v4
+        with:
+          repository: miropshq/mirops
+          token: ${{ secrets.CRD_TOKEN }}
+          path: mirops-operator-src
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: mirops-operator-src/go.mod
+
+      - name: Generate CRD manifests
+        working-directory: mirops-operator-src
+        run: make manifests
+
+      - name: Upload CRD artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: crd-upgradeanalyses
+          path: mirops-operator-src/config/crd/bases/mirops.mirops.io_upgradeanalyses.yaml
+          retention-days: 1
+
   publish:
     name: Publish Helm Chart to OCI Registry
     runs-on: ubuntu-latest
-    needs: validate
+    needs: sync-crd
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Sync CRD from operator repo
-        working-directory: mirops-operator
-        run: |
-          mkdir -p crds
-          curl -fsSL \
-            -H "Authorization: Bearer ${{ secrets.CRD_TOKEN }}" \
-            -H "Accept: application/vnd.github.raw" \
-            "https://api.github.com/repos/miropshq/mirops/contents/config/crd/bases/mirops.mirops.io_upgradeanalyses.yaml" \
-            -o crds/upgradeanalyses.mirops.mirops.io.yaml
+      - name: Download CRD artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: crd-upgradeanalyses
+          path: mirops-operator/crds
 
       - name: Set up Helm
         uses: azure/setup-helm@v3
