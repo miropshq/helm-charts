@@ -1,8 +1,0 @@
-apiVersion: mirops.mirops.io/v1
-kind: UpgradeAnalysis
-metadata:
-  name: {{ include "mirops.fullname" . }}-upgrade-analysis
-  namespace: {{ .Values.namespace.name }}
-  labels:
-    {{- include "mirops.labels" . | nindent 4 }}
-spec: {}
