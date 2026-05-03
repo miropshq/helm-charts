@@ -53,12 +53,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Sync CRD from operator (main)
+      - name: Sync CRD from operator repo
         working-directory: mirops-operator
         run: |
-          mkdir -p crds
           curl -fsSL \
-            "https://raw.githubusercontent.com/miropshq/mirops/main/config/crd/bases/mirops.mirops.io_upgradeanalyses.yaml" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.raw" \
+            "https://api.github.com/repos/miropshq/mirops/contents/config/crd/bases/mirops.mirops.io_upgradeanalyses.yaml" \
             -o crds/upgradeanalyses.mirops.mirops.io.yaml
 
       - name: Set up Helm
