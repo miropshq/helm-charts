@@ -53,6 +53,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Sync CRD from operator (main)
+        working-directory: mirops-operator
+        run: |
+          mkdir -p crds
+          curl -fsSL \
+            "https://raw.githubusercontent.com/miropshq/mirops/main/config/crd/bases/mirops.mirops.io_upgradeanalyses.yaml" \
+            -o crds/upgradeanalyses.mirops.mirops.io.yaml
+
       - name: Set up Helm
         uses: azure/setup-helm@v3
         with:
