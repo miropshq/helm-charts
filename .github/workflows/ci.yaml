@@ -56,6 +56,7 @@ jobs:
       - name: Sync CRD from operator repo
         working-directory: mirops-operator
         run: |
+          mkdir -p crds
           curl -fsSL \
             -H "Authorization: Bearer ${{ secrets.CRD_TOKEN }}" \
             -H "Accept: application/vnd.github.raw" \
