@@ -57,7 +57,7 @@ jobs:
         working-directory: mirops-operator
         run: |
           curl -fsSL \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: Bearer ${{ secrets.CRD_TOKEN }}" \
             -H "Accept: application/vnd.github.raw" \
             "https://api.github.com/repos/miropshq/mirops/contents/config/crd/bases/mirops.mirops.io_upgradeanalyses.yaml" \
             -o crds/upgradeanalyses.mirops.mirops.io.yaml
