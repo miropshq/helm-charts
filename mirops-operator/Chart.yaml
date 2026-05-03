@@ -2,8 +2,8 @@ apiVersion: v2
 name: mirops
 description: A Helm chart for mirops - Kubernetes Upgrade Analysis Operator
 type: application
-version: 0.10.0
-appVersion: "0.10.0"
+version: 0.1.0
+appVersion: "0.1.0"
 keywords:
   - kubernetes
   - operator
