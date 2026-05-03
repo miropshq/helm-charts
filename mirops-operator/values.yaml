@@ -10,7 +10,7 @@ namespace:
 image:
   repository: ghcr.io/miropshq/mirops
   pullPolicy: IfNotPresent
-  tag: "dev"
+  tag: "latest"
 
 # Image pull secrets for private registries
 imagePullSecrets: []
