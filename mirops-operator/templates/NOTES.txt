@@ -12,7 +12,14 @@
     name: cluster-analysis
     namespace: {{ .Release.Namespace }}
   spec:
-    foo: "example-value"
+    targetVersion: "1.36"
+    scope:
+      mode: application               # "all" analyzes the entire cluster, "application" excludes system namespaces (e.g., kube-system)
+      excludeNamespaces:
+        - mirops                      # exclude the operator's own namespace
+    source:
+      type: file
+      path: /tmp/mirops-report.json   # path to the input report file used for analysis
   EOF
 
 4. Check the status of your UpgradeAnalysis:
