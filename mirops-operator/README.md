@@ -1,108 +1,139 @@
-# Mirops Helm Chart
+# Mirops Operator Helm Chart
 
-Este es un Helm chart para desplegar el operador **mirops** en Kubernetes.
+This Helm chart deploys the Mirops Kubernetes upgrade-analysis operator.
 
-## Requisitos
+The operator watches `UpgradeAnalysis` resources, collects cluster readiness signals, computes an upgrade-risk score, and writes a report that can be consumed by `mirops-cli`.
 
-- Kubernetes 1.20+
+## Requirements
+
+- Kubernetes 1.20 or newer
 - Helm 3.x
+- A reachable Mirops operator image
 
-## Instalación
+## Install
 
-### 1. Build de la imagen Docker (si no tienes una disponible)
+Install with default values:
 
-```bash
-# Desde la raíz del proyecto
-make docker-build IMG=mirops:0.1.0
-# Opcional: empujar a registry
-make docker-push IMG=mirops:0.1.0
+```sh
+helm install mirops ./mirops-operator --namespace mirops --create-namespace
 ```
 
-### 2. Instalar con Helm
+Install with a custom image:
 
-```bash
-# Con valores por defecto (crea namespace mirops-system automáticamente)
-helm install mirops ./helm/mirops
-
-# Con el namespace ya existente
-helm install mirops ./helm/mirops --namespace mirops-system --create-namespace
-
-# Con imagen personalizada
-helm install mirops ./helm/mirops \
-  --set image.repository=myregistry/mirops \
-  --set image.tag=0.1.0
+```sh
+helm install mirops ./mirops-operator \
+  --namespace mirops \
+  --create-namespace \
+  --set image.repository=<registry>/mirops \
+  --set image.tag=<tag>
 ```
 
-### 3. Verificar la instalación
+Install with private registry credentials:
 
-```bash
-# Ver el namespace
-kubectl get ns mirops-system
-
-# Ver el deployment en el namespace mirops-system
-kubectl get deployment -n mirops-system
-
-# Ver logs del controller
-kubectl logs -f -n mirops-system deployment/mirops-controller-manager-controller-manager
+```sh
+helm install mirops ./mirops-operator \
+  --namespace mirops \
+  --create-namespace \
+  --set registryCredentials.enabled=true \
+  --set registryCredentials.registry=ghcr.io \
+  --set registryCredentials.username=<username> \
+  --set registryCredentials.password=<token> \
+  --set registryCredentials.email=<email>
 ```
 
-## Valores configurables (values.yaml)
+## Verify
 
-| Pnamespace.create` | `true` | Crear el namespace automáticamente |
-| `namespace.name` | `mirops-system` | Nombre del namespace |
-| `arámetro | Defecto | Descripción |
-|-----------|---------|-------------|
-| `image.repository` | `mirops` | Repository de la imagen |
-| `image.tag` | `latest` | Tag de la imagen |
-| `image.pullPolicy` | `IfNotPresent` | Pull policy |
-| `replicaCount` | `1` | Número de réplicas |
+```sh
+kubectl get pods -n mirops
+kubectl get deployment -n mirops
+kubectl logs -n mirops deployment/mirops-controller-manager
+```
+
+## Create An Analysis
+
+```yaml
+apiVersion: mirops.mirops.io/v1
+kind: UpgradeAnalysis
+metadata:
+  name: upgrade-check
+  namespace: mirops
+spec:
+  targetVersion: "1.29"
+  scope:
+    mode: application
+  source:
+    type: file
+    path: /tmp/mirops-report.json
+```
+
+Apply it:
+
+```sh
+kubectl apply -f upgrade-analysis.yaml
+kubectl get upgradeanalysis -n mirops
+kubectl describe upgradeanalysis upgrade-check -n mirops
+```
+
+## Values
+
+| Value | Default | Description |
+| ----- | ------- | ----------- |
+| `namespace.create` | `true` | Create the namespace from the chart |
+| `namespace.name` | `mirops` | Namespace name used by chart resources |
+| `image.repository` | `ghcr.io/miropshq/mirops` | Operator image repository |
+| `image.tag` | `latest` | Operator image tag |
+| `image.pullPolicy` | `IfNotPresent` | Image pull policy |
+| `imagePullSecrets` | `[]` | Existing image pull secrets |
+| `registryCredentials.enabled` | `false` | Create an image pull secret from provided credentials |
+| `registryCredentials.registry` | `ghcr.io` | Private registry host |
+| `registryCredentials.username` | `""` | Registry username |
+| `registryCredentials.password` | `""` | Registry password or token |
+| `registryCredentials.email` | `""` | Registry email |
+| `replicaCount` | `1` | Number of operator replicas |
+| `serviceAccount.create` | `true` | Create a service account |
+| `serviceAccount.name` | `mirops-controller-manager` | Service account name |
+| `serviceAccount.annotations` | `{}` | Service account annotations |
+| `rbac.create` | `true` | Create RBAC resources |
+| `podAnnotations` | `{}` | Pod annotations |
+| `podSecurityContext.runAsNonRoot` | `true` | Run pod as non-root |
+| `podSecurityContext.runAsUser` | `65532` | User ID for the pod |
+| `securityContext.allowPrivilegeEscalation` | `false` | Disable privilege escalation |
+| `securityContext.readOnlyRootFilesystem` | `true` | Use a read-only root filesystem |
 | `resources.requests.cpu` | `100m` | CPU request |
 | `resources.requests.memory` | `64Mi` | Memory request |
 | `resources.limits.cpu` | `500m` | CPU limit |
 | `resources.limits.memory` | `128Mi` | Memory limit |
-| `leaderElection.enabled` | `true` | Habilitar leader election |
-| `metrics.enabled` | `true` | Habilitar métricas |
+| `nodeSelector` | `{}` | Node selector |
+| `tolerations` | `[]` | Pod tolerations |
+| `affinity` | `{}` | Pod affinity |
+| `metrics.enabled` | `true` | Enable metrics service |
+| `metrics.port` | `8080` | Metrics port |
+| `healthProbe.port` | `8081` | Health probe port |
+| `report.path` | `/tmp/mirops-report.json` | Default local report path |
+| `leaderElection.enabled` | `true` | Enable leader election |
+| `logLevel` | `info` | Operator log level |
 
-## Ejemplo de uso en cualquier namespace:
+## Upgrade
 
-```bash
-# Crear en el namespace default
-cat <<EOF | kubectl apply -f -
-apiVersion: mirops.mirops.io/v1
-kind: UpgradeAnalysis
-metadata:
-  name: my-upgrade-check
-  namespace: default
-spec:
-  foo: "kubernetes-1.28"
-EOF
+```sh
+helm upgrade mirops ./mirops-operator --namespace mirops
 ```
 
-Ver el status:
+## Uninstall
 
-```bash
-kubectl describe upgradeanalysis my-upgrade-check -n default
+```sh
+helm uninstall mirops --namespace mirops
 ```
 
-El controller en `mirops-system` procesará automáticamente el recurso.
+If the chart created the namespace and no other resources depend on it, delete it manually when needed:
 
-## Desinstalar
-
-```bash
-helm uninstall mirops
-# El namespace mirops-system será eliminado si no contiene otros recursos
-```bash
-helm uninstall mirops -n mirops-system
+```sh
+kubectl delete namespace mirops
 ```
 
-## Ficheros incluidos
+## Render Or Lint
 
-- `Chart.yaml` - Metadata del chart
-- `values.yaml` - Valores por defecto
-- `templates/deployment.yaml` - Deployment del controller
-- `templates/service-account.yaml` - ServiceAccount
-- `templates/cluster-role.yaml` - ClusterRole
-- `templates/cluster-role-binding.yaml` - ClusterRoleBinding
-- `templates/service.yaml` - Service para métricas
-- `templates/_helpers.tpl` - Helper functions
-- `templates/NOTES.txt` - Instrucciones post-install
+```sh
+helm template mirops ./mirops-operator --namespace mirops
+helm lint ./mirops-operator
+```

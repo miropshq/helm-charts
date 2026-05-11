@@ -1,0 +1,36 @@
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor and IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment and local config
+.env
+.env.*
+!.env.example
+*.local
+*.kubeconfig
+kubeconfig
+
+# Helm chart packages and dependency output
+*.tgz
+charts/
+Chart.lock
+
+# Rendered manifests and local values
+rendered/
+manifests/
+install.yaml
+values.local.yaml
+values.*.local.yaml
+secrets.yaml
+*.secret.yaml
+
+# Logs
+*.log
