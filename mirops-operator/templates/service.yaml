@@ -17,3 +17,22 @@ spec:
     {{- include "mirops.selectorLabels" . | nindent 4 }}
     control-plane: controller-manager
 {{- end }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mirops.fullname" . }}-reports
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "mirops.labels" . | nindent 4 }}
+    control-plane: controller-manager
+spec:
+  ports:
+  - name: reports
+    port: {{ .Values.reports.port }}
+    targetPort: reports
+    protocol: TCP
+  selector:
+    {{- include "mirops.selectorLabels" . | nindent 4 }}
+    control-plane: controller-manager

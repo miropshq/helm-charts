@@ -78,9 +78,11 @@ metrics:
 healthProbe:
   port: 8081
 
-# Report output configuration
-report:
-  path: /tmp/mirops-report.json
+# Reports HTTP server configuration
+# The operator exposes reports via HTTP so Headlamp and other UIs can read them.
+reports:
+  port: 8084
+  dir: /var/mirops/reports
 
 # Leader election
 leaderElection:
