@@ -1,0 +1,33 @@
+{{- if and .Values.remediation.enabled .Values.rbac.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "mirops.fullname" . }}-remediation-role
+  labels:
+    {{- include "mirops.labels" . | nindent 4 }}
+rules:
+- apiGroups: ["mirops.mirops.io"]
+  resources: ["remediationplans"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["mirops.mirops.io"]
+  resources: ["remediationplans/status"]
+  verbs: ["get", "update", "patch"]
+- apiGroups: ["mirops.mirops.io"]
+  resources: ["remediationplans/finalizers"]
+  verbs: ["update"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch", "patch", "update"]
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list", "watch", "patch", "update"]
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "patch", "update"]
+{{- end }}
