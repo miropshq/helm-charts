@@ -63,11 +63,18 @@ jobs:
         working-directory: mirops-operator-src
         run: make manifests
 
-      - name: Upload CRD artifact
+      - name: Upload CRD artifact (UpgradeAnalysis)
         uses: actions/upload-artifact@v4
         with:
           name: crd-upgradeanalyses
           path: mirops-operator-src/config/crd/bases/mirops.mirops.io_upgradeanalyses.yaml
+          retention-days: 1
+
+      - name: Upload CRD artifact (RemediationPlan)
+        uses: actions/upload-artifact@v4
+        with:
+          name: crd-remediationplans
+          path: mirops-operator-src/config/crd/bases/mirops.mirops.io_remediationplans.yaml
           retention-days: 1
 
   publish:
@@ -79,10 +86,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download CRD artifact
+      - name: Download CRD artifact (UpgradeAnalysis)
         uses: actions/download-artifact@v4
         with:
           name: crd-upgradeanalyses
+          path: mirops-operator/crds
+
+      - name: Download CRD artifact (RemediationPlan)
+        uses: actions/download-artifact@v4
+        with:
+          name: crd-remediationplans
           path: mirops-operator/crds
 
       - name: Set up Helm
