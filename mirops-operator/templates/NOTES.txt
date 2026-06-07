@@ -15,11 +15,16 @@
     targetVersion: "1.36"
     scope:
       mode: application               # "all" analyzes the entire cluster, "application" excludes system namespaces (e.g., kube-system)
-      excludeNamespaces:
-        - mirops                      # exclude the operator's own namespace
     source:
       type: file
       path: /tmp/mirops-report.json   # path to the input report file used for analysis
+    ai:
+      enabled: true
+      provider: anthropic
+      model: claude-sonnet-4-6
+      credentialsSecret: anthropic-secret  # Secret containing the Anthropic API key
+    resync:
+      interval: 15m                   # how often to re-run the analysis
   EOF
 
 4. Check the status of your UpgradeAnalysis:

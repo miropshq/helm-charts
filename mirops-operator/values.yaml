@@ -8,7 +8,7 @@ namespace:
 
 # Image configuration
 image:
-  repository: ghcr.io/miropshq/mirops
+  repository: ghcr.io/miropshq/mirops/operator
   pullPolicy: IfNotPresent
   tag: "latest"
 
@@ -88,3 +88,30 @@ leaderElection:
 
 # Log level
 logLevel: info
+
+# Remediation manager configuration
+remediation:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/miropshq/mirops/remediation
+    pullPolicy: IfNotPresent
+    tag: "latest"
+
+  healthProbe:
+    port: 8082
+
+  metrics:
+    port: 8083
+
+  leaderElection:
+    enabled: true
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
