@@ -45,7 +45,7 @@ jobs:
     name: Sync CRD from Operator Repo
     runs-on: ubuntu-latest
     needs: validate
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/development')
     steps:
       - name: Checkout operator repo
         uses: actions/checkout@v4
@@ -53,6 +53,7 @@ jobs:
           repository: miropshq/mirops
           token: ${{ secrets.CRD_TOKEN }}
           path: mirops-operator-src
+          ref: ${{ github.ref_name }}
 
       - name: Set up Go
         uses: actions/setup-go@v5
