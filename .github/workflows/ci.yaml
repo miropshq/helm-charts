@@ -53,7 +53,7 @@ jobs:
           repository: miropshq/mirops
           token: ${{ secrets.CRD_TOKEN }}
           path: mirops-operator-src
-          ref: ${{ github.ref_name }}
+          ref: development
 
       - name: Set up Go
         uses: actions/setup-go@v5
