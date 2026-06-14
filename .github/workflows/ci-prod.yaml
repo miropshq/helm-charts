@@ -42,15 +42,15 @@ jobs:
 
           for TAG in "$OPERATOR_TAG" "$REMEDIATION_TAG"; do
             if echo "$TAG" | grep -qiE '(dev|development|latest|snapshot)'; then
-              echo "ERROR: image tag '$TAG' no está permitido en main. Usa una versión semver (ej: v1.0.0)"
+              echo "ERROR: image tag '$TAG' is not allowed in main. Use a semver version (e.g. v1.0.0)"
               exit 1
             fi
             if ! echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+'; then
-              echo "ERROR: image tag '$TAG' no sigue el formato vX.Y.Z"
+              echo "ERROR: image tag '$TAG' does not follow the vX.Y.Z format"
               exit 1
             fi
           done
-          echo "Image tags válidos: operator=$OPERATOR_TAG remediation=$REMEDIATION_TAG"
+          echo "Valid image tags: operator=$OPERATOR_TAG remediation=$REMEDIATION_TAG"
 
   sync-crd:
     name: Download CRD from Operator Repo
