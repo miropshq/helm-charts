@@ -58,10 +58,18 @@ jobs:
     needs: validate
 
     steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: mirops
+
       - name: Download CRD artifact
         uses: dawidd6/action-download-artifact@v9
         with:
-          github_token: ${{ secrets.CRD_TOKEN }}
+          github_token: ${{ steps.app-token.outputs.token }}
           repo: miropshq/mirops
           workflow: ci-prod.yml
           branch: main
