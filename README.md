@@ -22,6 +22,29 @@ From this directory:
 helm install mirops ./mirops-operator --namespace mirops --create-namespace
 ```
 
+From the published OCI repositories:
+
+```sh
+# Development chart repo
+helm install mirops oci://ghcr.io/miropshq/charts-dev/mirops \
+  --namespace mirops \
+  --create-namespace \
+  --version 0.1.0-dev.<run_number>
+
+# Production chart repo
+helm install mirops oci://ghcr.io/miropshq/charts-prod/mirops \
+  --namespace mirops \
+  --create-namespace \
+  --version 0.1.0
+```
+
+The published chart defaults are environment-specific:
+
+| Environment | Branch | Chart repo | Default image tag |
+| ----------- | ------ | ---------- | ----------------- |
+| Development | `development` | `charts-dev` | `dev` from `IMAGE_TAG` in the workflow |
+| Production | `main` | `charts-prod` | `appVersion` from `Chart.yaml`, currently `0.1.0` |
+
 Use a custom image:
 
 ```sh

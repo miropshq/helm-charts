@@ -1,0 +1,119 @@
+name: Mirops Helm Chart CI Production Environment
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  CHART_DIR: mirops-operator
+
+jobs:
+  validate:
+    name: Lint and Validate Helm Chart
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'latest'
+
+      - name: Helm lint
+        working-directory: ${{ env.CHART_DIR }}
+        run: helm lint .
+
+      - name: Helm template (render all manifests)
+        working-directory: ${{ env.CHART_DIR }}
+        run: helm template mirops . --debug > /dev/null
+
+
+      - name: Validate image tags are not dev
+        working-directory: ${{ env.CHART_DIR }}
+        run: |
+          OPERATOR_TAG=$(grep -A2 "^image:" values.yaml | grep "tag:" | awk '{print $2}' | tr -d '"')
+          REMEDIATION_TAG=$(grep -A2 "^  image:" values.yaml | grep "tag:" | awk '{print $2}' | tr -d '"')
+
+          for TAG in "$OPERATOR_TAG" "$REMEDIATION_TAG"; do
+            if echo "$TAG" | grep -qiE '(dev|development|latest|snapshot)'; then
+              echo "ERROR: image tag '$TAG' no está permitido en main. Usa una versión semver (ej: v1.0.0)"
+              exit 1
+            fi
+            if ! echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+'; then
+              echo "ERROR: image tag '$TAG' no sigue el formato vX.Y.Z"
+              exit 1
+            fi
+          done
+          echo "Image tags válidos: operator=$OPERATOR_TAG remediation=$REMEDIATION_TAG"
+
+  sync-crd:
+    name: Download CRD from Operator Repo
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - name: Download CRD artifact
+        uses: dawidd6/action-download-artifact@v9
+        with:
+          github_token: ${{ secrets.CRD_TOKEN }}
+          repo: miropshq/mirops
+          workflow: ci-prod.yml
+          branch: main
+          name: crds-prod
+          path: ./crds
+
+      - name: Upload CRD artifact for next job
+        uses: actions/upload-artifact@v4
+        with:
+          name: crds-prod
+          path: ./crds/*.yaml
+          retention-days: 1
+
+  publish:
+    name: Publish Helm Chart to OCI Registry
+    runs-on: ubuntu-latest
+    needs: sync-crd
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download CRD artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: crds-prod
+          path: ${{ env.CHART_DIR }}/crds
+
+      - name: Verify CRD files
+        run: ls -lah ${{ env.CHART_DIR }}/crds
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: latest
+
+      - name: Login to GitHub Container Registry
+        run: |
+          helm registry login ghcr.io \
+            --username ${{ github.actor }} \
+            --password ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Helm chart
+        working-directory: ${{ env.CHART_DIR }}
+        run: |
+          CHART_VERSION=$(grep "^version:" Chart.yaml | awk '{print $2}')
+          CHART_NAME=$(grep "^name:" Chart.yaml | awk '{print $2}')
+
+          helm package .
+
+          helm push ${CHART_NAME}-${CHART_VERSION}.tgz oci://ghcr.io/${{ github.repository_owner }}/charts
+
+      - name: Logout from GitHub Container Registry
+        if: always()
+        run: helm registry logout ghcr.io

@@ -1,10 +1,19 @@
 1. Get the status of your deployment:
   kubectl get deployment {{ include "mirops.fullname" . }}-controller-manager -n {{ .Release.Namespace }}
+{{- if .Values.remediation.enabled }}
+  kubectl get deployment {{ include "mirops.fullname" . }}-remediation-manager -n {{ .Release.Namespace }}
+{{- end }}
 
 2. Check the controller logs:
   kubectl logs -n {{ .Release.Namespace }} deployment/{{ include "mirops.fullname" . }}-controller-manager
 
-3. Create an UpgradeAnalysis resource:
+3. (Optional) Create the AI credentials secret (required when ai.enabled is true):
+  kubectl create secret generic anthropic-secret \
+    -n {{ .Release.Namespace }} \
+    --from-literal=ANTHROPIC_API_KEY=<your-api-key>
+  # For OpenAI use: --from-literal=OPENAI_API_KEY=<your-api-key> and provider: openai
+
+4. Create an UpgradeAnalysis resource:
   cat <<EOF | kubectl apply -f -
   apiVersion: mirops.mirops.io/v1
   kind: UpgradeAnalysis
@@ -12,24 +21,61 @@
     name: cluster-analysis
     namespace: {{ .Release.Namespace }}
   spec:
-    targetVersion: "1.36"
+    targetVersion: "1.36"             # must be HIGHER than the current cluster version, otherwise decision=ERROR
     scope:
       mode: application               # "all" analyzes the entire cluster, "application" excludes system namespaces (e.g., kube-system)
-    source:
-      type: file
-      path: /tmp/mirops-report.json   # path to the input report file used for analysis
     ai:
       enabled: true
       provider: anthropic
       model: claude-sonnet-4-6
-      credentialsSecret: anthropic-secret  # Secret containing the Anthropic API key
+      credentialsSecret: anthropic-secret
+      remediation:
+        enabled: true                 # AI proposes fix actions as a RemediationPlan
+        maxRiskLevel: medium          # low | medium | high — filters out riskier actions
+        # autoApprove: true           # uncomment to execute actions immediately (default: manual approval)
     resync:
-      interval: 15m                   # how often to re-run the analysis
+      interval: 15m                   # omit to run the analysis only once
+    # source:                         # optional: ADDITIONALLY export the report to s3/blob
+    #   type: s3
+    #   bucket: my-bucket
+    #   region: us-east-1
+    #   key: reports/cluster-analysis.json
+    #   credentialsSecret: aws-secret
   EOF
 
-4. Check the status of your UpgradeAnalysis:
+5. Check the analysis result (score, decision, add-on compatibility summary):
   kubectl get upgradeanalysis -n {{ .Release.Namespace }}
   kubectl describe upgradeanalysis cluster-analysis -n {{ .Release.Namespace }}
+
+6. Read the full report (logical mirror: dependency graph, per-namespace risk, add-ons):
+  The report is always written inside the operator pod and served over HTTP on port {{ .Values.reports.port }}:
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "mirops.fullname" . }}-reports {{ .Values.reports.port }}:{{ .Values.reports.port }}
+  curl http://localhost:{{ .Values.reports.port }}/reports/cluster-analysis.json | jq '.addons, .risk'
+
+7. Review and approve the AI-proposed remediation (when ai.remediation.enabled is true):
+  kubectl get remediationplan -n {{ .Release.Namespace }}
+  kubectl describe remediationplan cluster-analysis-remediation -n {{ .Release.Namespace }}
+  # Execute ALL actions:
+  kubectl patch remediationplan cluster-analysis-remediation -n {{ .Release.Namespace }} \
+    --type=merge -p '{"spec":{"approved":true}}'
+  # Or skip specific actions first (per-action skip), then approve:
+  kubectl patch remediationplan cluster-analysis-remediation -n {{ .Release.Namespace }} \
+    --type=json -p '[{"op":"replace","path":"/spec/actions/0/skip","value":true},{"op":"replace","path":"/spec/approved","value":true}]'
+
+8. (Optional) Override the add-on compatibility matrix without redeploying:
+  Create a ConfigMap named "mirops-compatibility-matrix" (key: matrix.yaml) in the
+  namespace of the UpgradeAnalysis. Per-addon rules replace the built-in defaults:
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: mirops-compatibility-matrix
+    namespace: {{ .Release.Namespace }}
+  data:
+    matrix.yaml: |
+      addons:
+        istio:
+          - addonRange: ">=1.24.0"
+            k8sRange: ">=1.29.0"
 
 For more information:
   https://github.com/miropshq/mirops
