@@ -77,7 +77,7 @@ jobs:
       - name: Download CRD artifact
         uses: actions/download-artifact@v4
         with:
-          name: crds-dev
+          name: crds-prod
           path: ${{ env.CHART_DIR }}/crds
 
       - name: Verify CRD files
@@ -96,15 +96,9 @@ jobs:
 
       - name: Build and push Helm chart
         working-directory: ${{ env.CHART_DIR }}
-        env:
-          DEV_IMAGE_TAG: dev
         run: |
           CHART_VERSION=$(grep "^version:" Chart.yaml | awk '{print $2}')
-          CHART_NAME="$(grep "^name:" Chart.yaml | awk '{print $2}')-dev"
-
-          yq e ".name = \"${CHART_NAME}\"" -i Chart.yaml
-          yq e ".image.tag = \"${DEV_IMAGE_TAG}\"" -i values.yaml
-          yq e ".remediation.image.tag = \"${DEV_IMAGE_TAG}\"" -i values.yaml
+          CHART_NAME=$(grep "^name:" Chart.yaml | awk '{print $2}')
 
           helm package .
 

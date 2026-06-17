@@ -10,4 +10,6 @@ keywords:
   - upgrade-analysis
 maintainers:
   - name: Mirops Team
-homepage: https://github.com/miropshq/mirops
+home: https://github.com/miropshq/mirops
+sources:
+  - https://github.com/miropshq/mirops

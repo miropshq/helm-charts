@@ -1,4 +1,4 @@
-name: Mirops Helm Chart CI Production Environment
+name: Mirops Helm Chart CI Release
 
 on:
   push:

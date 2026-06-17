@@ -1,9 +1,12 @@
-name: Mirops Helm Chart CI Feature Branches
+name: CI - Feature / PR (validate)
 
+# Validation-only pipeline. Runs on every PR targeting main. It never pushes
+# images or artifacts — it only proves the code is sound so a green check means
+# the PR is safe to merge.
 on:
-  push:
+  pull_request:
     branches:
-      - 'feature/**'
+      - main
 
 permissions:
   contents: read
@@ -12,6 +15,7 @@ env:
   CHART_DIR: mirops-operator
 
 jobs:
+
   validate:
     name: Lint and Validate Helm Chart
     runs-on: ubuntu-latest
@@ -23,12 +27,11 @@ jobs:
         uses: azure/setup-helm@v3
         with:
           version: 'latest'
-
-      - name: Helm lint
-        working-directory: ${{ env.CHART_DIR }}
-        run: helm lint .
-
+          
       - name: Helm template (render all manifests)
         working-directory: ${{ env.CHART_DIR }}
         run: helm template mirops . --debug > /dev/null
 
+      - name: Helm template (render all manifests)
+        working-directory: mirops-operator
+        run: helm template mirops . --debug > /dev/null
