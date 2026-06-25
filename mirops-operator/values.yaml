@@ -10,7 +10,7 @@ namespace:
 image:
   repository: ghcr.io/miropshq/mirops/operator
   pullPolicy: IfNotPresent
-  tag: "dev"
+  tag: "v0.1.0"
 
 # Image pull secrets for private registries
 imagePullSecrets: []
@@ -112,7 +112,7 @@ remediation:
   image:
     repository: ghcr.io/miropshq/mirops/remediation
     pullPolicy: IfNotPresent
-    tag: "dev"
+    tag: "v0.1.0"
 
   healthProbe:
     port: 8082
