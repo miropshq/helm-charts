@@ -21,6 +21,9 @@ spec:
       labels:
         {{- include "mirops.selectorLabels" . | nindent 8 }}
         control-plane: controller-manager
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       {{- with .Values.podSecurityContext }}
       securityContext:

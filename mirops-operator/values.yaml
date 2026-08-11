@@ -29,6 +29,10 @@ replicaCount: 1
 serviceAccount:
   create: true
   name: mirops-controller-manager
+  # Annotations added to the operator ServiceAccount(s). Empty by default (works everywhere).
+  # Cloud workload-identity is opt-in here — set only for the environment you run in:
+  #   AWS (EKS, IRSA):        eks.amazonaws.com/role-arn: arn:aws:iam::<acct>:role/<role>
+  #   Azure (AKS, Workload Identity): azure.workload.identity/client-id: <managed-identity-client-id>
   annotations: {}
 
 # RBAC configuration
@@ -37,6 +41,13 @@ rbac:
 
 # Pod annotations
 podAnnotations: {}
+
+# Extra labels added to the operator pods. Empty by default (no effect on-prem / any cloud).
+# Azure AKS Workload Identity requires a pod label to trigger token injection — set it here:
+#   podLabels:
+#     azure.workload.identity/use: "true"
+# (AWS IRSA and on-prem need no pod label, so leave this empty there.)
+podLabels: {}
 
 # Pod security context
 podSecurityContext:
