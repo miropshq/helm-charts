@@ -38,12 +38,11 @@ helm install mirops oci://ghcr.io/miropshq/charts-prod/mirops \
   --version 0.1.0
 ```
 
-The published chart defaults are environment-specific:
+The chart publishes from `main`:
 
-| Environment | Branch | Chart repo | Default image tag |
-| ----------- | ------ | ---------- | ----------------- |
-| Development | `development` | `charts-dev` | `dev` from `IMAGE_TAG` in the workflow |
-| Production | `main` | `charts-prod` | `appVersion` from `Chart.yaml`, currently `0.1.0` |
+| Branch | Chart repo | Default image tag |
+| ------ | ---------- | ----------------- |
+| `main` | `charts-prod` | `appVersion` from `Chart.yaml`, currently `0.1.0` |
 
 Use a custom image:
 
