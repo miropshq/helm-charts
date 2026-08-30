@@ -112,6 +112,52 @@ kubectl describe upgradeanalysis upgrade-check -n mirops
 | `report.path` | `/tmp/mirops-report.json` | Default local report path |
 | `leaderElection.enabled` | `true` | Enable leader election |
 | `logLevel` | `info` | Operator log level |
+| `compatMatrix.enabled` | `false` | Pull a published compatibility-matrix version (off → use the operator's embedded matrix) |
+| `compatMatrix.repo` | `ghcr.io/miropshq/mirops-compat` | OCI repo for the matrix artifact |
+| `compatMatrix.version` | `latest` | Matrix version: `latest`, or a date tag like `v2026.06.15` |
+| `compatMatrix.orasImage` | `ghcr.io/oras-project/oras:v1.2.0` | Image used by the pull Job |
+| `compatMatrix.kubectlImage` | `bitnami/kubectl:1.31` | Image used to write the ConfigMap |
+
+## Compatibility matrix version
+
+By default the operator uses its **embedded** matrix (baked into the image at build) — deterministic and offline-safe. To **decouple the matrix from the operator image** and update it without rebuilding, enable `compatMatrix`: a pre-install/pre-upgrade hook Job pulls the chosen version into the `mirops-compatibility-matrix` ConfigMap the operator reads.
+
+```sh
+# always the newest matrix (non-prod / stay current)
+helm upgrade --install mirops oci://ghcr.io/miropshq/charts-prod/mirops -n mirops \
+  --set compatMatrix.enabled=true --set compatMatrix.version=latest
+
+# pin a date tag (reproducible; recommended for production)
+helm upgrade --install mirops oci://ghcr.io/miropshq/charts-prod/mirops -n mirops \
+  --set compatMatrix.enabled=true --set compatMatrix.version=v2026.06.15
+```
+
+> Keep `latest` for non-production and **pin a date** in production, so the upgrade verdict stays reproducible. For air-gapped clusters, leave `compatMatrix.enabled=false` and rely on the embedded matrix.
+
+**Private matrix artifact.** While the OCI artifact is private, the pull Job needs registry auth. It reuses your registry credentials automatically:
+
+```sh
+# reuse the same PAT that pulls the operator image
+helm upgrade --install mirops oci://ghcr.io/miropshq/charts-prod/mirops -n mirops \
+  --set compatMatrix.enabled=true \
+  --set registryCredentials.enabled=true \
+  --set registryCredentials.username=<user> --set registryCredentials.password=<PAT read:packages>
+```
+
+Alternatively, point `compatMatrix.pullSecret` at an existing `kubernetes.io/dockerconfigjson` secret. When the artifact is **public**, set neither — the Job pulls anonymously.
+
+## Azure Workload Identity
+
+On AKS, set the pod label and the identity client-id (and, when the cluster's default OIDC tenant isn't the identity's — e.g. cross-tenant — the tenant-id):
+
+```sh
+helm upgrade --install mirops oci://ghcr.io/miropshq/charts-prod/mirops -n mirops \
+  --set-string podLabels."azure\.workload\.identity/use"=true \
+  --set serviceAccount.annotations."azure\.workload\.identity/client-id"=<client-id> \
+  --set serviceAccount.annotations."azure\.workload\.identity/tenant-id"=<tenant-id>   # optional
+```
+
+For AWS EKS use IRSA instead: `--set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=<role-arn>`.
 
 ## Upgrade
 

@@ -33,6 +33,8 @@ serviceAccount:
   # Cloud workload-identity is opt-in here — set only for the environment you run in:
   #   AWS (EKS, IRSA):        eks.amazonaws.com/role-arn: arn:aws:iam::<acct>:role/<role>
   #   Azure (AKS, Workload Identity): azure.workload.identity/client-id: <managed-identity-client-id>
+  #     Optionally also set the tenant when the cluster's default OIDC tenant isn't the identity's
+  #     (e.g. cross-tenant): azure.workload.identity/tenant-id: <tenant-id>
   annotations: {}
 
 # RBAC configuration
@@ -114,6 +116,31 @@ leaderElection:
 
 # Log level
 logLevel: info
+
+# Compatibility matrix — the add-on ↔ Kubernetes source the operator uses.
+#
+# By default (enabled: false) the operator uses its EMBEDDED matrix (baked into the image at build).
+# That is deterministic and works offline/air-gapped — the recommended default.
+#
+# Enable this to pull a specific published matrix version from OCI into the override ConfigMap
+# 'mirops-compatibility-matrix' (which the operator already reads), so the matrix is decoupled from
+# the operator image — update it without rebuilding the operator. A pre-install/pre-upgrade Helm hook
+# Job does the pull.
+#
+#   version: latest          -> newest published matrix (freshest; use for non-prod / to stay current)
+#   version: v2026.06.15     -> pin a date tag (reproducible; recommended for production)
+compatMatrix:
+  enabled: false
+  repo: ghcr.io/miropshq/mirops-compat
+  version: latest
+  # Registry auth for the OCI pull (needed only while the matrix artifact is private):
+  #   - Leave both empty for a PUBLIC artifact (anonymous pull).
+  #   - Set registryCredentials.enabled=true to reuse the same PAT that pulls the operator image.
+  #   - Or point pullSecret at an existing kubernetes.io/dockerconfigjson secret.
+  pullSecret: ""
+  # Images the pull Job uses.
+  orasImage: ghcr.io/oras-project/oras:v1.2.0
+  kubectlImage: bitnami/kubectl:1.31
 
 # Remediation manager configuration
 remediation:

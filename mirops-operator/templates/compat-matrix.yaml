@@ -1,0 +1,158 @@
+{{- if .Values.compatMatrix.enabled }}
+# Pulls the chosen compatibility-matrix version from OCI and writes it into the
+# 'mirops-compatibility-matrix' ConfigMap the operator reads as an override — so the matrix is
+# decoupled from the operator image. Runs as a pre-install/pre-upgrade Helm hook (RBAC first, then
+# the Job), so the ConfigMap is ready before the operator starts.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "mirops.fullname" . }}-compat-puller
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "mirops.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+{{- with .Values.imagePullSecrets }}
+imagePullSecrets:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "mirops.fullname" . }}-compat-puller
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "mirops.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "mirops.fullname" . }}-compat-puller
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "mirops.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "mirops.fullname" . }}-compat-puller
+    namespace: {{ .Values.namespace.name }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "mirops.fullname" . }}-compat-puller
+{{- if and .Values.registryCredentials.enabled (not .Values.compatMatrix.pullSecret) }}
+---
+# Registry auth for `oras pull` when the matrix OCI artifact is private. Built from
+# registryCredentials (the same PAT used to pull the operator image), as a docker config.json that
+# oras reads via DOCKER_CONFIG. Deleted after the hook succeeds.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "mirops.fullname" . }}-compat-puller-auth
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "mirops.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+stringData:
+  config.json: |-
+    {"auths":{"{{ .Values.registryCredentials.registry }}":{"auth":"{{ printf "%s:%s" .Values.registryCredentials.username .Values.registryCredentials.password | b64enc }}"}}}
+{{- end }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "mirops.fullname" . }}-compat-puller
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "mirops.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        {{- include "mirops.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "mirops.fullname" . }}-compat-puller
+      restartPolicy: Never
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      # Pull the matrix OCI artifact into a shared volume; the pulled file keeps its name (matrix.yaml).
+      initContainers:
+        - name: pull-matrix
+          image: {{ .Values.compatMatrix.orasImage }}
+          {{- if or .Values.registryCredentials.enabled .Values.compatMatrix.pullSecret }}
+          env:
+            - name: DOCKER_CONFIG
+              value: /oras-auth
+          {{- end }}
+          command:
+            - oras
+            - pull
+            - "{{ .Values.compatMatrix.repo }}:{{ .Values.compatMatrix.version }}"
+            - "--output"
+            - /data
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            {{- if or .Values.registryCredentials.enabled .Values.compatMatrix.pullSecret }}
+            - name: oras-auth
+              mountPath: /oras-auth
+              readOnly: true
+            {{- end }}
+      # Write it into the override ConfigMap (upsert).
+      containers:
+        - name: apply-configmap
+          image: {{ .Values.compatMatrix.kubectlImage }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              kubectl create configmap mirops-compatibility-matrix \
+                --namespace {{ .Values.namespace.name }} \
+                --from-file=matrix.yaml=/data/matrix.yaml \
+                --dry-run=client -o yaml | kubectl apply -f -
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          emptyDir: {}
+        {{- if .Values.compatMatrix.pullSecret }}
+        - name: oras-auth
+          secret:
+            secretName: {{ .Values.compatMatrix.pullSecret }}
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+        {{- else if .Values.registryCredentials.enabled }}
+        - name: oras-auth
+          secret:
+            secretName: {{ include "mirops.fullname" . }}-compat-puller-auth
+            items:
+              - key: config.json
+                path: config.json
+        {{- end }}
+{{- end }}
