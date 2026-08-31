@@ -3,6 +3,10 @@
 # 'mirops-compatibility-matrix' ConfigMap the operator reads as an override — so the matrix is
 # decoupled from the operator image. Runs as a pre-install/pre-upgrade Helm hook (RBAC first, then
 # the Job), so the ConfigMap is ready before the operator starts.
+#
+# NOTE: hooks run before normal resources, so the target namespace must already exist. Install with
+# `--namespace <ns> --create-namespace` so Helm creates it first (the chart's default
+# namespace.create=false keeps it from creating a second one).
 apiVersion: v1
 kind: ServiceAccount
 metadata:

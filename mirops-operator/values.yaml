@@ -2,8 +2,13 @@
 # Declare variables to be passed into your templates
 
 # Namespace configuration
+# create: keep this false and let Helm create the namespace instead — `--create-namespace` on the CLI,
+#   or `create_namespace = true` in the Terraform helm_release. That is the single knob for the
+#   namespace, and it works for every case (including compatMatrix, whose pre-install hook needs the
+#   namespace to exist before the chart's normal resources). Set create: true only if you specifically
+#   want the chart to own the Namespace resource — then do NOT also pass Helm's --create-namespace.
 namespace:
-  create: true
+  create: false
   name: mirops
 
 # Image configuration
