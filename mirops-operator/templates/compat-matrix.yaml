@@ -134,9 +134,11 @@ spec:
             - /bin/sh
             - -c
             - |
+              # oras restores the file under the title it was pushed with ('dist/matrix.yaml'),
+              # so it lands at /data/dist/matrix.yaml.
               kubectl create configmap mirops-compatibility-matrix \
                 --namespace {{ .Values.namespace.name }} \
-                --from-file=matrix.yaml=/data/matrix.yaml \
+                --from-file=matrix.yaml=/data/dist/matrix.yaml \
                 --dry-run=client -o yaml | kubectl apply -f -
           volumeMounts:
             - name: data

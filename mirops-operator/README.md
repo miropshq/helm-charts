@@ -129,11 +129,11 @@ A matrix version is a frozen snapshot of every add-on rule (`addonRange` → `k8
 ```sh
 # a pinned date
 oras pull ghcr.io/miropshq/mirops-compat:v2026.08.30 --output ./matrix
-cat ./matrix/matrix.yaml
+cat ./matrix/dist/matrix.yaml
 
 # or the moving 'latest'
 oras pull ghcr.io/miropshq/mirops-compat:latest --output ./matrix
-cat ./matrix/matrix.yaml
+cat ./matrix/dist/matrix.yaml
 ```
 
 Once installed with `compatMatrix.enabled=true`, the same content lives in the ConfigMap the operator reads:
