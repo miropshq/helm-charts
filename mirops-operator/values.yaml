@@ -145,7 +145,7 @@ compatMatrix:
   pullSecret: ""
   # Images the pull Job uses.
   orasImage: ghcr.io/oras-project/oras:v1.2.0
-  kubectlImage: bitnami/kubectl:1.31
+  kubectlImage: registry.k8s.io/kubectl:v1.31.0
 
 # Remediation manager configuration
 remediation:

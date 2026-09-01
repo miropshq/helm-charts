@@ -100,7 +100,7 @@ kubectl describe upgradeanalysis upgrade-check -n mirops
 | `compatMatrix.repo` | `ghcr.io/miropshq/mirops-compat` | OCI repo for the matrix artifact |
 | `compatMatrix.version` | `latest` | Matrix version: `latest`, or a date tag like `v2026.06.15` |
 | `compatMatrix.orasImage` | `ghcr.io/oras-project/oras:v1.2.0` | Image used by the pull Job |
-| `compatMatrix.kubectlImage` | `bitnami/kubectl:1.31` | Image used to write the ConfigMap |
+| `compatMatrix.kubectlImage` | `registry.k8s.io/kubectl:v1.31.0` | Image used to write the ConfigMap |
 
 ## Compatibility matrix version
 
