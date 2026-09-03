@@ -17,17 +17,10 @@ image:
   pullPolicy: IfNotPresent
   tag: "v0.1.0"
 
-# Image pull secrets for private registries
+# Image pull secrets for private registries. The images are public, so this is empty by default;
+# set it only if you mirror them to a private registry and need an existing pull secret.
 imagePullSecrets: []
-# - name: ghcr-secret
-
-# Docker credentials for private registries
-registryCredentials:
-  enabled: false
-  registry: ghcr.io
-  username: ""
-  password: "" # Use personal access token (PAT) instead of password
-  email: ""
+# - name: my-registry-secret
 replicaCount: 1
 
 # Service Account configuration
@@ -138,10 +131,8 @@ compatMatrix:
   enabled: false
   repo: ghcr.io/miropshq/mirops-compat
   version: latest
-  # Registry auth for the OCI pull (needed only while the matrix artifact is private):
-  #   - Leave both empty for a PUBLIC artifact (anonymous pull).
-  #   - Set registryCredentials.enabled=true to reuse the same PAT that pulls the operator image.
-  #   - Or point pullSecret at an existing kubernetes.io/dockerconfigjson secret.
+  # The matrix artifact is PUBLIC, so the pull is anonymous — leave pullSecret empty. Only set it (to an
+  # existing kubernetes.io/dockerconfigjson secret) if you mirror the artifact to a private registry.
   pullSecret: ""
   # Images the pull Job uses.
   orasImage: ghcr.io/oras-project/oras:v1.2.0

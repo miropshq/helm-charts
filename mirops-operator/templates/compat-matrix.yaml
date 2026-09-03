@@ -58,26 +58,6 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: {{ include "mirops.fullname" . }}-compat-puller
-{{- if and .Values.registryCredentials.enabled (not .Values.compatMatrix.pullSecret) }}
----
-# Registry auth for `oras pull` when the matrix OCI artifact is private. Built from
-# registryCredentials (the same PAT used to pull the operator image), as a docker config.json that
-# oras reads via DOCKER_CONFIG. Deleted after the hook succeeds.
-apiVersion: v1
-kind: Secret
-metadata:
-  name: {{ include "mirops.fullname" . }}-compat-puller-auth
-  namespace: {{ .Values.namespace.name }}
-  labels:
-    {{- include "mirops.labels" . | nindent 4 }}
-  annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-weight": "-5"
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
-stringData:
-  config.json: |-
-    {"auths":{"{{ .Values.registryCredentials.registry }}":{"auth":"{{ printf "%s:%s" .Values.registryCredentials.username .Values.registryCredentials.password | b64enc }}"}}}
-{{- end }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -107,7 +87,7 @@ spec:
       initContainers:
         - name: pull-matrix
           image: {{ .Values.compatMatrix.orasImage }}
-          {{- if or .Values.registryCredentials.enabled .Values.compatMatrix.pullSecret }}
+          {{- if .Values.compatMatrix.pullSecret }}
           env:
             - name: DOCKER_CONFIG
               value: /oras-auth
@@ -121,7 +101,7 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
-            {{- if or .Values.registryCredentials.enabled .Values.compatMatrix.pullSecret }}
+            {{- if .Values.compatMatrix.pullSecret }}
             - name: oras-auth
               mountPath: /oras-auth
               readOnly: true
@@ -152,13 +132,6 @@ spec:
             secretName: {{ .Values.compatMatrix.pullSecret }}
             items:
               - key: .dockerconfigjson
-                path: config.json
-        {{- else if .Values.registryCredentials.enabled }}
-        - name: oras-auth
-          secret:
-            secretName: {{ include "mirops.fullname" . }}-compat-puller-auth
-            items:
-              - key: config.json
                 path: config.json
         {{- end }}
 {{- end }}
