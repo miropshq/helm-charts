@@ -21,18 +21,18 @@ spec:
       labels:
         {{- include "mirops.selectorLabels" . | nindent 8 }}
         control-plane: controller-manager
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "mirops.fullname" . }}-controller-manager
-      {{- if .Values.imagePullSecrets }}
+      {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
-        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
-      {{- else if .Values.registryCredentials.enabled }}
-      imagePullSecrets:
-        - name: {{ include "mirops.fullname" . }}-ghcr-secret
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
       - name: manager
@@ -53,6 +53,12 @@ spec:
         env:
         - name: CONTROLLER_NAME
           value: "mirops-upgrade-analysis"
+        # UpgradeAnalysis/RemediationPlan are cluster-scoped, so the operator reads its own
+        # dependencies (AI secret, compatibility-matrix ConfigMap) from its own namespace.
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         ports:
         - name: metrics
           containerPort: {{ .Values.metrics.port }}
@@ -82,11 +88,20 @@ spec:
             mountPath: /tmp
           - name: reports
             mountPath: {{ .Values.reports.dir }}
+          {{- if .Values.reportPVC.enabled }}
+          - name: report-pvc
+            mountPath: {{ .Values.reportPVC.mountPath }}
+          {{- end }}
       volumes:
         - name: tmp
           emptyDir: {}
         - name: reports
           emptyDir: {}
+        {{- if .Values.reportPVC.enabled }}
+        - name: report-pvc
+          persistentVolumeClaim:
+            claimName: {{ .Values.reportPVC.existingClaim | default (printf "%s-report" (include "mirops.fullname" .)) }}
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

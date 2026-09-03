@@ -47,17 +47,3 @@ Selector labels
 app.kubernetes.io/name: {{ include "mirops.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
-
-{{/*
-Generate docker config for image pull secret
-*/}}
-{{- define "imagePullSecretData" -}}
-{
-  "{{ .Values.registryCredentials.registry }}": {
-    "username": "{{ .Values.registryCredentials.username }}",
-    "password": "{{ .Values.registryCredentials.password }}",
-    "email": "{{ .Values.registryCredentials.email }}",
-    "auth": "{{ printf "%s:%s" .Values.registryCredentials.username .Values.registryCredentials.password | b64enc }}"
-  }
-}
-{{- end }}

@@ -1,0 +1,89 @@
+name: Mirops Helm Chart CI Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  CHART_DIR: mirops-operator
+
+jobs:
+  validate:
+    name: Lint and Validate Helm Chart
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'latest'
+
+      - name: Helm lint
+        working-directory: ${{ env.CHART_DIR }}
+        run: helm lint .
+
+      - name: Helm template (render all manifests)
+        working-directory: ${{ env.CHART_DIR }}
+        run: helm template mirops . --debug > /dev/null
+
+
+      - name: Validate image tags are not dev
+        working-directory: ${{ env.CHART_DIR }}
+        run: |
+          OPERATOR_TAG=$(grep -A2 "^image:" values.yaml | grep "tag:" | awk '{print $2}' | tr -d '"')
+          REMEDIATION_TAG=$(grep -A2 "^  image:" values.yaml | grep "tag:" | awk '{print $2}' | tr -d '"')
+
+          for TAG in "$OPERATOR_TAG" "$REMEDIATION_TAG"; do
+            if echo "$TAG" | grep -qiE '(dev|development|latest|snapshot)'; then
+              echo "ERROR: image tag '$TAG' is not allowed in main. Use a semver version (e.g. v1.0.0)"
+              exit 1
+            fi
+            if ! echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+'; then
+              echo "ERROR: image tag '$TAG' does not follow the vX.Y.Z format"
+              exit 1
+            fi
+          done
+          echo "Valid image tags: operator=$OPERATOR_TAG remediation=$REMEDIATION_TAG"
+
+  publish:
+    name: Publish Helm Chart to OCI Registry
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # No CRD handling here: the operator embeds and installs its own CRDs at startup, so the chart
+      # only ships the workloads and RBAC. Choosing an image tag chooses the matching CRDs.
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: latest
+
+      - name: Login to GitHub Container Registry
+        run: |
+          helm registry login ghcr.io \
+            --username ${{ github.actor }} \
+            --password ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Helm chart
+        working-directory: ${{ env.CHART_DIR }}
+        run: |
+          CHART_VERSION=$(grep "^version:" Chart.yaml | awk '{print $2}')
+          CHART_NAME=$(grep "^name:" Chart.yaml | awk '{print $2}')
+
+          helm package .
+
+          helm push ${CHART_NAME}-${CHART_VERSION}.tgz oci://ghcr.io/${{ github.repository_owner }}/charts
+
+      - name: Logout from GitHub Container Registry
+        if: always()
+        run: helm registry logout ghcr.io
