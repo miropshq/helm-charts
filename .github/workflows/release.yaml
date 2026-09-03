@@ -37,8 +37,8 @@ jobs:
       - name: Validate image tags are not dev
         working-directory: ${{ env.CHART_DIR }}
         run: |
-          OPERATOR_TAG=$(grep -A2 "^image:" values.yaml | grep "tag:" | awk '{print $2}' | tr -d '"')
-          REMEDIATION_TAG=$(grep -A2 "^  image:" values.yaml | grep "tag:" | awk '{print $2}' | tr -d '"')
+          OPERATOR_TAG=$(grep -A5 "^image:" values.yaml | grep -E "^[[:space:]]+tag:" | head -1 | awk '{print $2}' | tr -d '"')
+          REMEDIATION_TAG=$(grep -A5 "^  image:" values.yaml | grep -E "^[[:space:]]+tag:" | head -1 | awk '{print $2}' | tr -d '"')
 
           for TAG in "$OPERATOR_TAG" "$REMEDIATION_TAG"; do
             if echo "$TAG" | grep -qiE '(dev|development|latest|snapshot)'; then
