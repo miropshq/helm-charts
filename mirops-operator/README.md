@@ -110,12 +110,12 @@ By default the operator uses its **embedded** matrix (baked into the image at bu
 
 ```sh
 # always the newest matrix (non-prod / stay current)
-helm upgrade --install mirops oci://ghcr.io/miropshq/charts-prod/mirops \
+helm upgrade --install mirops oci://ghcr.io/miropshq/charts/mirops \
   --namespace mirops --create-namespace \
   --set compatMatrix.enabled=true --set compatMatrix.version=latest
 
 # pin a date tag (reproducible; recommended for production)
-helm upgrade --install mirops oci://ghcr.io/miropshq/charts-prod/mirops \
+helm upgrade --install mirops oci://ghcr.io/miropshq/charts/mirops \
   --namespace mirops --create-namespace \
   --set compatMatrix.enabled=true --set compatMatrix.version=v2026.06.15
 ```
@@ -147,7 +147,7 @@ kubectl get configmap mirops-compatibility-matrix -n mirops -o jsonpath='{.data.
 On AKS, set the pod label and the identity client-id (and, when the cluster's default OIDC tenant isn't the identity's — e.g. cross-tenant — the tenant-id):
 
 ```sh
-helm upgrade --install mirops oci://ghcr.io/miropshq/charts-prod/mirops -n mirops \
+helm upgrade --install mirops oci://ghcr.io/miropshq/charts/mirops -n mirops \
   --set-string podLabels."azure\.workload\.identity/use"=true \
   --set serviceAccount.annotations."azure\.workload\.identity/client-id"=<client-id> \
   --set serviceAccount.annotations."azure\.workload\.identity/tenant-id"=<tenant-id>   # optional
