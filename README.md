@@ -22,17 +22,10 @@ From this directory:
 helm install mirops ./mirops-operator --namespace mirops --create-namespace
 ```
 
-From the published OCI repositories:
+From the published OCI repository:
 
 ```sh
-# Development chart repo
-helm install mirops oci://ghcr.io/miropshq/charts-dev/mirops \
-  --namespace mirops \
-  --create-namespace \
-  --version 0.1.0-dev.<run_number>
-
-# Production chart repo
-helm install mirops oci://ghcr.io/miropshq/charts-prod/mirops \
+helm install mirops oci://ghcr.io/miropshq/charts/mirops \
   --namespace mirops \
   --create-namespace \
   --version 0.1.0
@@ -42,7 +35,7 @@ The chart publishes from `main`:
 
 | Branch | Chart repo | Default image tag |
 | ------ | ---------- | ----------------- |
-| `main` | `charts-prod` | `appVersion` from `Chart.yaml`, currently `0.1.0` |
+| `main` | `charts` | `appVersion` from `Chart.yaml`, currently `0.1.0` |
 
 Use a custom image:
 
