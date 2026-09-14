@@ -126,11 +126,11 @@ logLevel: info
 # Job does the pull.
 #
 #   version: latest          -> newest published matrix (freshest; use for non-prod / to stay current)
-#   version: v2026.06.15     -> pin a date tag (reproducible; recommended for production)
+#   version: v2026.09.03     -> pin a date tag (reproducible; recommended for production)
 compatMatrix:
   enabled: false
   repo: ghcr.io/miropshq/mirops-compat
-  version: latest
+  version: v2026.09.03
   # The matrix artifact is PUBLIC, so the pull is anonymous — leave pullSecret empty. Only set it (to an
   # existing kubernetes.io/dockerconfigjson secret) if you mirror the artifact to a private registry.
   pullSecret: ""

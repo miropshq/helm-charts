@@ -98,7 +98,7 @@ kubectl describe upgradeanalysis upgrade-check -n mirops
 | `logLevel` | `info` | Operator log level |
 | `compatMatrix.enabled` | `false` | Pull a published compatibility-matrix version (off → use the operator's embedded matrix) |
 | `compatMatrix.repo` | `ghcr.io/miropshq/mirops-compat` | OCI repo for the matrix artifact |
-| `compatMatrix.version` | `latest` | Matrix version: `latest`, or a date tag like `v2026.06.15` |
+| `compatMatrix.version` | `latest` | Matrix version: `latest`, or a date tag like `v2026.09.03` |
 | `compatMatrix.orasImage` | `ghcr.io/oras-project/oras:v1.2.0` | Image used by the pull Job |
 | `compatMatrix.kubectlImage` | `alpine/k8s:1.31.0` | Image used to write the ConfigMap (must include a shell — distroless kubectl images won't work) |
 
@@ -117,7 +117,7 @@ helm upgrade --install mirops oci://ghcr.io/miropshq/charts/mirops \
 # pin a date tag (reproducible; recommended for production)
 helm upgrade --install mirops oci://ghcr.io/miropshq/charts/mirops \
   --namespace mirops --create-namespace \
-  --set compatMatrix.enabled=true --set compatMatrix.version=v2026.06.15
+  --set compatMatrix.enabled=true --set compatMatrix.version=v2026.09.03
 ```
 
 > Keep `latest` for non-production and **pin a date** in production, so the upgrade verdict stays reproducible. For air-gapped clusters, leave `compatMatrix.enabled=false` and rely on the embedded matrix.
@@ -128,7 +128,7 @@ A matrix version is a frozen snapshot of every add-on rule (`addonRange` → `k8
 
 ```sh
 # a pinned date
-oras pull ghcr.io/miropshq/mirops-compat:v2026.08.30 --output ./matrix
+oras pull ghcr.io/miropshq/mirops-compat:v2026.09.03 --output ./matrix
 cat ./matrix/dist/matrix.yaml
 
 # or the moving 'latest'
