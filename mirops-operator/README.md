@@ -1,8 +1,8 @@
 # Mirops Operator Helm Chart
 
-This Helm chart deploys the Mirops Kubernetes upgrade-analysis operator.
+This Helm chart deploys the Mirops operator.
 
-The operator watches `UpgradeAnalysis` resources, collects cluster readiness signals, computes an upgrade-risk score, and writes a report that can be consumed by `mirops-cli`.
+Out of the box the operator runs an always-on **ClusterMirror**: it rebuilds the cluster's component dependency graph on an interval and publishes the current risk per namespace. Upgrade analysis (`UpgradeAnalysis`) is opt-in: set `upgrade.enabled=true` to have the operator compute an upgrade-risk score and write a report that `mirops-cli` can consume.
 
 ## Requirements
 
@@ -38,7 +38,28 @@ kubectl get deployment -n mirops
 kubectl logs -n mirops deployment/mirops-controller-manager
 ```
 
+## Cluster Mirror
+
+The operator creates a `ClusterMirror` named `default` at startup (only if it doesn't exist yet, so `kubectl edit` changes are kept):
+
+```sh
+kubectl get clustermirror
+# NAME      COMPONENTS   EDGES   AT RISK   LAST SYNC   AGE
+# default   184          297     3         30s         1h
+kubectl get clustermirror default -o jsonpath='{.status.byNamespace}'
+```
+
+Tune it with `mirror.default.spec` (same fields as the CR), or set `mirror.default.enabled=false` and create your own.
+
 ## Create An Analysis
+
+Upgrade analysis is off by default. Enable it first:
+
+```sh
+helm upgrade mirops ./mirops-operator --namespace mirops --reuse-values --set upgrade.enabled=true
+```
+
+Then create the analysis:
 
 ```yaml
 apiVersion: mirops.mirops.io/v1
@@ -72,6 +93,12 @@ kubectl describe upgradeanalysis upgrade-check -n mirops
 | `image.repository` | `ghcr.io/miropshq/mirops` | Operator image repository |
 | `image.tag` | `latest` | Operator image tag |
 | `image.pullPolicy` | `IfNotPresent` | Image pull policy |
+| `mirror.default.enabled` | `true` | Have the operator create the default `ClusterMirror` at startup (only if missing) |
+| `mirror.default.name` | `default` | Name of the default `ClusterMirror` |
+| `mirror.default.spec.scope.mode` | `all` | `all`, or `application` to exclude system namespaces |
+| `mirror.default.spec.scope.excludeNamespaces` | `[]` | Extra namespaces to leave out of the mirror |
+| `mirror.default.spec.refresh.interval` | `5m` | How often the mirror is rebuilt |
+| `upgrade.enabled` | `false` | Run the `UpgradeAnalysis` controller (upgrade-readiness analysis) |
 | `imagePullSecrets` | `[]` | Existing image pull secrets |
 | `replicaCount` | `1` | Number of operator replicas |
 | `serviceAccount.create` | `true` | Create a service account |

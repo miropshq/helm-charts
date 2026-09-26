@@ -59,6 +59,16 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        # UpgradeAnalysis is opt-in: the controller only runs when this is "true".
+        - name: MIROPS_UPGRADE_ENABLED
+          value: {{ .Values.upgrade.enabled | quote }}
+        {{- if .Values.mirror.default.enabled }}
+        # The operator creates this ClusterMirror at startup if it doesn't exist yet.
+        - name: MIROPS_DEFAULT_MIRROR
+          value: {{ .Values.mirror.default.name | quote }}
+        - name: MIROPS_DEFAULT_MIRROR_SPEC
+          value: {{ .Values.mirror.default.spec | toJson | quote }}
+        {{- end }}
         ports:
         - name: metrics
           containerPort: {{ .Values.metrics.port }}

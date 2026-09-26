@@ -7,13 +7,36 @@
 2. Check the controller logs:
   kubectl logs -n {{ .Release.Namespace }} deployment/{{ include "mirops.fullname" . }}-controller-manager
 
-3. (Optional) Create the AI credentials secret (required when ai.enabled is true):
+3. See the always-on cluster mirror (dependency graph size + current risk per namespace):
+{{- if .Values.mirror.default.enabled }}
+  kubectl get clustermirror {{ .Values.mirror.default.name }}
+  kubectl get clustermirror {{ .Values.mirror.default.name }} -o jsonpath='{.status.byNamespace}'
+{{- else }}
+  mirror.default.enabled is false, so no mirror was created. Create one:
+  cat <<EOF | kubectl apply -f -
+  apiVersion: mirops.mirops.io/v1
+  kind: ClusterMirror
+  metadata:
+    name: default
+  spec:
+    refresh:
+      interval: 5m
+  EOF
+{{- end }}
+{{- if not .Values.upgrade.enabled }}
+
+Upgrade analysis is OFF (upgrade.enabled=false), so UpgradeAnalysis resources are not processed.
+To analyse a Kubernetes version upgrade, enable it and then follow steps 4-9:
+  helm upgrade {{ .Release.Name }} <chart> -n {{ .Release.Namespace }} --reuse-values --set upgrade.enabled=true
+{{- end }}
+
+4. (Optional) Create the AI credentials secret (required when ai.enabled is true):
   kubectl create secret generic anthropic-secret \
     -n {{ .Release.Namespace }} \
     --from-literal=ANTHROPIC_API_KEY=<your-api-key>
   # For OpenAI use: --from-literal=OPENAI_API_KEY=<your-api-key> and provider: openai
 
-4. Create an UpgradeAnalysis resource:
+5. Create an UpgradeAnalysis resource:
   cat <<EOF | kubectl apply -f -
   apiVersion: mirops.mirops.io/v1
   kind: UpgradeAnalysis
@@ -43,16 +66,16 @@
     #   credentialsSecret: aws-secret
   EOF
 
-5. Check the analysis result (score, decision, add-on compatibility summary):
+6. Check the analysis result (score, decision, add-on compatibility summary):
   kubectl get upgradeanalysis -n {{ .Release.Namespace }}
   kubectl describe upgradeanalysis cluster-analysis -n {{ .Release.Namespace }}
 
-6. Read the full report (logical mirror: dependency graph, per-namespace risk, add-ons):
+7. Read the full report (logical mirror: dependency graph, per-namespace risk, add-ons):
   The report is always written inside the operator pod and served over HTTP on port {{ .Values.reports.port }}:
   kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "mirops.fullname" . }}-reports {{ .Values.reports.port }}:{{ .Values.reports.port }}
   curl http://localhost:{{ .Values.reports.port }}/reports/cluster-analysis.json | jq '.addons, .risk'
 
-7. Review and approve the AI-proposed remediation (when ai.remediation.enabled is true):
+8. Review and approve the AI-proposed remediation (when ai.remediation.enabled is true):
   kubectl get remediationplan -n {{ .Release.Namespace }}
   kubectl describe remediationplan cluster-analysis-remediation -n {{ .Release.Namespace }}
   # Execute ALL actions:
@@ -62,7 +85,7 @@
   kubectl patch remediationplan cluster-analysis-remediation -n {{ .Release.Namespace }} \
     --type=json -p '[{"op":"replace","path":"/spec/actions/0/skip","value":true},{"op":"replace","path":"/spec/approved","value":true}]'
 
-8. (Optional) Override the add-on compatibility matrix without redeploying:
+9. (Optional) Override the add-on compatibility matrix without redeploying:
   Create a ConfigMap named "mirops-compatibility-matrix" (key: matrix.yaml) in the
   namespace of the UpgradeAnalysis. Per-addon rules replace the built-in defaults:
   apiVersion: v1

@@ -15,7 +15,30 @@ namespace:
 image:
   repository: ghcr.io/miropshq/mirops/operator
   pullPolicy: IfNotPresent
-  tag: "v0.1.0"
+  tag: "v0.2.0"
+
+# ClusterMirror — the always-on logical mirror of the cluster: the component dependency graph and
+# the current per-namespace risk, rebuilt on an interval. The operator creates the default mirror
+# at startup (the chart can't ship it: the CRD only exists once the operator installs it). It is
+# created only if missing, so later `kubectl edit clustermirror <name>` changes are kept.
+#   kubectl get clustermirror
+mirror:
+  default:
+    enabled: true
+    name: default
+    spec:
+      scope:
+        mode: all                # all | application (application excludes system namespaces)
+        excludeNamespaces: []
+      refresh:
+        mode: interval           # only "interval" today
+        interval: 5m
+
+# UpgradeAnalysis — opt-in upgrade-readiness mode. When false (default) the operator does not run
+# the UpgradeAnalysis controller; the ClusterMirror above keeps running. Set true to analyse a
+# Kubernetes version upgrade (then create an UpgradeAnalysis resource with a targetVersion).
+upgrade:
+  enabled: false
 
 # Image pull secrets for private registries. The images are public, so this is empty by default;
 # set it only if you mirror them to a private registry and need an existing pull secret.
@@ -148,7 +171,7 @@ remediation:
   image:
     repository: ghcr.io/miropshq/mirops/remediation
     pullPolicy: IfNotPresent
-    tag: "v0.1.0"
+    tag: "v0.2.0"
 
   healthProbe:
     port: 8082

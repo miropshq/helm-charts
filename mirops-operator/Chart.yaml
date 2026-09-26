@@ -1,13 +1,14 @@
 apiVersion: v2
 name: mirops
-description: A Helm chart for mirops - Kubernetes Upgrade Analysis Operator
+description: A Helm chart for mirops - an always-on mirror of your Kubernetes cluster's dependencies and risk, with opt-in upgrade analysis
 type: application
-version: 0.1.0
-appVersion: "0.1.0"
+version: 0.2.0
+appVersion: "0.2.0"
 keywords:
   - kubernetes
   - operator
   - upgrade-analysis
+  - dependency-graph
 maintainers:
   - name: Mirops Team
 home: https://github.com/miropshq/mirops
