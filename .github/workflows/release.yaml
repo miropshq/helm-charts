@@ -52,6 +52,15 @@ jobs:
           done
           echo "Valid image tags: operator=$OPERATOR_TAG remediation=$REMEDIATION_TAG"
 
+          # Artifact Hub lists (and security-scans) the images in Chart.yaml's artifacthub.io/images;
+          # they must be the ones values.yaml installs.
+          for IMAGE in "operator:$OPERATOR_TAG" "remediation:$REMEDIATION_TAG"; do
+            if ! grep -q "image: ghcr.io/miropshq/mirops/$IMAGE\$" Chart.yaml; then
+              echo "ERROR: Chart.yaml artifacthub.io/images doesn't list ghcr.io/miropshq/mirops/$IMAGE (values.yaml)"
+              exit 1
+            fi
+          done
+
   publish:
     name: Publish Helm Chart to OCI Registry
     runs-on: ubuntu-latest
@@ -86,9 +95,25 @@ jobs:
 
           helm push ${CHART_NAME}-${CHART_VERSION}.tgz oci://ghcr.io/${{ github.repository_owner }}/charts
 
+      # Artifact Hub reads an OCI chart from the registry, not from git: the repository metadata
+      # (ownership / Verified Publisher) goes next to the chart as the `artifacthub.io` tag. Nothing
+      # is committed to main or to any branch.
+      - name: Set up ORAS
+        uses: oras-project/setup-oras@v1
+
+      - name: Publish Artifact Hub repository metadata
+        run: |
+          CHART_NAME=$(grep "^name:" ${{ env.CHART_DIR }}/Chart.yaml | awk '{print $2}')
+          echo "${{ secrets.GITHUB_TOKEN }}" | oras login ghcr.io --username ${{ github.actor }} --password-stdin
+          oras push ghcr.io/${{ github.repository_owner }}/charts/${CHART_NAME}:artifacthub.io \
+            --config /dev/null:application/vnd.cncf.artifacthub.config.v1+yaml \
+            artifacthub-repo.yml:application/vnd.cncf.artifacthub.repository-metadata.layer.v1.yaml
+
       - name: Logout from GitHub Container Registry
         if: always()
-        run: helm registry logout ghcr.io
+        run: |
+          helm registry logout ghcr.io
+          oras logout ghcr.io || true
 
       - name: Notify Slack
         if: ${{ always() && env.SLACK_WEBHOOK_URL != '' }}

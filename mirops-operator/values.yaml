@@ -15,7 +15,13 @@ namespace:
 image:
   repository: ghcr.io/miropshq/mirops/operator
   pullPolicy: IfNotPresent
-  tag: "v0.1.0"
+  tag: "v0.2.0"
+
+# UpgradeAnalysis — opt-in upgrade-readiness mode. When false (default) the operator does not run
+# the UpgradeAnalysis controller; the ClusterMirror controller keeps running. Set true to analyse a
+# Kubernetes version upgrade (then create an UpgradeAnalysis resource with a targetVersion).
+upgrade:
+  enabled: false
 
 # Image pull secrets for private registries. The images are public, so this is empty by default;
 # set it only if you mirror them to a private registry and need an existing pull secret.
@@ -95,7 +101,7 @@ reports:
   port: 8084
   dir: /var/mirops/reports
 
-# Persistent report storage for on-premises clusters (UpgradeAnalysis source.type: pvc).
+# Persistent report storage for on-premises clusters (ClusterMirror / UpgradeAnalysis source.type: pvc).
 # When enabled, a PVC is mounted at mountPath; set the CR's source.path to the same path
 # (or leave it empty to use the operator default /mnt/mirops-reports — keep mountPath in sync).
 reportPVC:
@@ -148,7 +154,7 @@ remediation:
   image:
     repository: ghcr.io/miropshq/mirops/remediation
     pullPolicy: IfNotPresent
-    tag: "v0.1.0"
+    tag: "v0.2.0"
 
   healthProbe:
     port: 8082

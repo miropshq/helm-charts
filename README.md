@@ -6,13 +6,12 @@ This directory contains Helm charts for installing Mirops components on Kubernet
 
 | Chart | Description |
 | ----- | ----------- |
-| `mirops-operator` | Deploys the Mirops Kubernetes upgrade-analysis operator |
+| `mirops-operator` | Deploys the Mirops operator: the always-on ClusterMirror, plus opt-in upgrade analysis · [Artifact Hub](https://artifacthub.io/packages/helm/mirops-operator/mirops) |
 
 ## Requirements
 
-- Kubernetes 1.20 or newer
+- Kubernetes 1.31 – 1.34 (recent clusters; older may work but is untested)
 - Helm 3.x
-- A published Mirops operator image, or access to build and push one
 
 ## Install The Operator
 
@@ -22,20 +21,20 @@ From this directory:
 helm install mirops ./mirops-operator --namespace mirops --create-namespace
 ```
 
-From the published OCI repository:
+From the published OCI repository — also listed on [Artifact Hub](https://artifacthub.io/packages/helm/mirops-operator/mirops):
 
 ```sh
 helm install mirops oci://ghcr.io/miropshq/charts/mirops \
   --namespace mirops \
   --create-namespace \
-  --version 0.1.0
+  --version 0.2.0
 ```
 
 The chart publishes from `main`:
 
 | Branch | Chart repo | Default image tag |
 | ------ | ---------- | ----------------- |
-| `main` | `charts` | `appVersion` from `Chart.yaml`, currently `0.1.0` |
+| `main` | `charts` | `appVersion` from `Chart.yaml`, currently `0.2.0` |
 
 Use a custom image:
 
@@ -43,7 +42,7 @@ Use a custom image:
 helm install mirops ./mirops-operator \
   --namespace mirops \
   --create-namespace \
-  --set image.repository=<registry>/mirops \
+  --set image.repository=<registry>/mirops/operator \
   --set image.tag=<tag>
 ```
 
