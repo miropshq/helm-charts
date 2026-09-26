@@ -13,7 +13,7 @@
   apiVersion: mirops.mirops.io/v1
   kind: ClusterMirror
   metadata:
-    name: default                     # Headlamp and mirops-cli look for "default" first
+    name: default                     # the Headlamp plugin opens "default" first
   spec:
     scope:
       mode: all                       # all | application (application excludes system namespaces)
@@ -45,8 +45,7 @@ To analyse a Kubernetes version upgrade, enable it and then follow steps 4-9:
   apiVersion: mirops.mirops.io/v1
   kind: UpgradeAnalysis
   metadata:
-    name: cluster-analysis
-    namespace: {{ .Release.Namespace }}
+    name: cluster-analysis            # cluster-scoped — no namespace
   spec:
     targetVersion: "1.36"             # must be HIGHER than the current cluster version, otherwise decision=ERROR
     scope:
@@ -62,36 +61,36 @@ To analyse a Kubernetes version upgrade, enable it and then follow steps 4-9:
         # autoApprove: true           # uncomment to execute actions immediately (default: manual approval)
     resync:
       interval: 15m                   # omit to run the analysis only once
-    # source:                         # optional: ADDITIONALLY export the report to s3/blob
+    # source:                         # optional: write the report to s3/blob/pvc instead of the pod
     #   type: s3
     #   bucket: my-bucket
     #   region: us-east-1
-    #   key: reports/cluster-analysis.json
+    #   key: reports/cluster-analysis.mirops
     #   credentialsSecret: aws-secret
   EOF
 
 6. Check the analysis result (score, decision, add-on compatibility summary):
-  kubectl get upgradeanalysis -n {{ .Release.Namespace }}
-  kubectl describe upgradeanalysis cluster-analysis -n {{ .Release.Namespace }}
+  kubectl get upgradeanalysis
+  kubectl describe upgradeanalysis cluster-analysis
 
-7. Read the full report (logical mirror: dependency graph, per-namespace risk, add-ons):
-  The report is always written inside the operator pod and served over HTTP on port {{ .Values.reports.port }}:
+7. Read the full reports. The reports service serves both, wherever they are stored (port {{ .Values.reports.port }}):
   kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "mirops.fullname" . }}-reports {{ .Values.reports.port }}:{{ .Values.reports.port }}
-  curl http://localhost:{{ .Values.reports.port }}/reports/cluster-analysis.json | jq '.addons, .risk'
+  curl http://localhost:{{ .Values.reports.port }}/reports/default.mirror | jq '.summary, .atRisk'
+  curl http://localhost:{{ .Values.reports.port }}/reports/cluster-analysis.mirops | jq '.decision, .addons'
 
 8. Review and approve the AI-proposed remediation (when ai.remediation.enabled is true):
-  kubectl get remediationplan -n {{ .Release.Namespace }}
-  kubectl describe remediationplan cluster-analysis-remediation -n {{ .Release.Namespace }}
+  kubectl get remediationplan
+  kubectl describe remediationplan cluster-analysis-remediation
   # Execute ALL actions:
-  kubectl patch remediationplan cluster-analysis-remediation -n {{ .Release.Namespace }} \
+  kubectl patch remediationplan cluster-analysis-remediation \
     --type=merge -p '{"spec":{"approved":true}}'
   # Or skip specific actions first (per-action skip), then approve:
-  kubectl patch remediationplan cluster-analysis-remediation -n {{ .Release.Namespace }} \
+  kubectl patch remediationplan cluster-analysis-remediation \
     --type=json -p '[{"op":"replace","path":"/spec/actions/0/skip","value":true},{"op":"replace","path":"/spec/approved","value":true}]'
 
 9. (Optional) Override the add-on compatibility matrix without redeploying:
   Create a ConfigMap named "mirops-compatibility-matrix" (key: matrix.yaml) in the
-  namespace of the UpgradeAnalysis. Per-addon rules replace the built-in defaults:
+  operator's namespace ({{ .Release.Namespace }}). Per-addon rules replace the built-in defaults:
   apiVersion: v1
   kind: ConfigMap
   metadata:

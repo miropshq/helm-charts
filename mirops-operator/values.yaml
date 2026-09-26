@@ -101,7 +101,7 @@ reports:
   port: 8084
   dir: /var/mirops/reports
 
-# Persistent report storage for on-premises clusters (UpgradeAnalysis source.type: pvc).
+# Persistent report storage for on-premises clusters (ClusterMirror / UpgradeAnalysis source.type: pvc).
 # When enabled, a PVC is mounted at mountPath; set the CR's source.path to the same path
 # (or leave it empty to use the operator default /mnt/mirops-reports — keep mountPath in sync).
 reportPVC:
