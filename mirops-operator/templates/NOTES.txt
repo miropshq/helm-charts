@@ -7,9 +7,26 @@
 2. Check the controller logs:
   kubectl logs -n {{ .Release.Namespace }} deployment/{{ include "mirops.fullname" . }}-controller-manager
 
-3. See the always-on cluster mirror (dependency graph size + current risk per namespace):
-  kubectl get clustermirror {{ .Values.mirror.default.name }}
-  kubectl get clustermirror {{ .Values.mirror.default.name }} -o jsonpath='{.status.byNamespace}'
+3. Create your ClusterMirror — the always-on mirror of the cluster (dependency graph + current risk).
+   The chart installs no ClusterMirror; mirops starts mirroring once you create one:
+  cat <<EOF | kubectl apply -f -
+  apiVersion: mirops.mirops.io/v1
+  kind: ClusterMirror
+  metadata:
+    name: default                     # Headlamp and mirops-cli look for "default" first
+  spec:
+    scope:
+      mode: all                       # all | application (application excludes system namespaces)
+    refresh:
+      interval: 5m                    # how often the mirror is rebuilt
+    # source:                         # optional: write the report to s3/blob/pvc instead of the pod
+    #   type: s3
+    #   bucket: my-bucket
+    #   region: us-east-1
+    #   key: mirops/default.mirror
+  EOF
+  kubectl get clustermirror
+  kubectl get clustermirror default -o jsonpath='{.status.byNamespace}'
 {{- if not .Values.upgrade.enabled }}
 
 Upgrade analysis is OFF (upgrade.enabled=false), so UpgradeAnalysis resources are not processed.

@@ -17,24 +17,8 @@ image:
   pullPolicy: IfNotPresent
   tag: "v0.2.0"
 
-# ClusterMirror — the always-on logical mirror of the cluster: the component dependency graph and
-# the current per-namespace risk, rebuilt on an interval. It's mandatory: the operator creates the
-# default mirror at startup (the chart can't ship it: the CRD only exists once the operator installs
-# it) and applies this spec on every start, so change it here — `kubectl edit` changes are overwritten.
-#   kubectl get clustermirror
-mirror:
-  default:
-    name: default
-    spec:
-      scope:
-        mode: all                # all | application (application excludes system namespaces)
-        excludeNamespaces: []
-      refresh:
-        mode: interval           # only "interval" today
-        interval: 5m
-
 # UpgradeAnalysis — opt-in upgrade-readiness mode. When false (default) the operator does not run
-# the UpgradeAnalysis controller; the ClusterMirror above keeps running. Set true to analyse a
+# the UpgradeAnalysis controller; the ClusterMirror controller keeps running. Set true to analyse a
 # Kubernetes version upgrade (then create an UpgradeAnalysis resource with a targetVersion).
 upgrade:
   enabled: false
