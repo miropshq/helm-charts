@@ -8,21 +8,8 @@
   kubectl logs -n {{ .Release.Namespace }} deployment/{{ include "mirops.fullname" . }}-controller-manager
 
 3. See the always-on cluster mirror (dependency graph size + current risk per namespace):
-{{- if .Values.mirror.default.enabled }}
   kubectl get clustermirror {{ .Values.mirror.default.name }}
   kubectl get clustermirror {{ .Values.mirror.default.name }} -o jsonpath='{.status.byNamespace}'
-{{- else }}
-  mirror.default.enabled is false, so no mirror was created. Create one:
-  cat <<EOF | kubectl apply -f -
-  apiVersion: mirops.mirops.io/v1
-  kind: ClusterMirror
-  metadata:
-    name: default
-  spec:
-    refresh:
-      interval: 5m
-  EOF
-{{- end }}
 {{- if not .Values.upgrade.enabled }}
 
 Upgrade analysis is OFF (upgrade.enabled=false), so UpgradeAnalysis resources are not processed.

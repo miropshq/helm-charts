@@ -18,13 +18,12 @@ image:
   tag: "v0.2.0"
 
 # ClusterMirror — the always-on logical mirror of the cluster: the component dependency graph and
-# the current per-namespace risk, rebuilt on an interval. The operator creates the default mirror
-# at startup (the chart can't ship it: the CRD only exists once the operator installs it). It is
-# created only if missing, so later `kubectl edit clustermirror <name>` changes are kept.
+# the current per-namespace risk, rebuilt on an interval. It's mandatory: the operator creates the
+# default mirror at startup (the chart can't ship it: the CRD only exists once the operator installs
+# it) and applies this spec on every start, so change it here — `kubectl edit` changes are overwritten.
 #   kubectl get clustermirror
 mirror:
   default:
-    enabled: true
     name: default
     spec:
       scope:
