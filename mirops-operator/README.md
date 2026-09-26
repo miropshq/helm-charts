@@ -1,5 +1,7 @@
 # Mirops Operator Helm Chart
 
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/mirops-operator)](https://artifacthub.io/packages/helm/mirops-operator/mirops)
+
 This Helm chart deploys the Mirops operator.
 
 The operator keeps an always-on **ClusterMirror** of the cluster: it rebuilds the component dependency graph on an interval and publishes the current risk per namespace. Upgrade analysis (`UpgradeAnalysis`) is opt-in: set `upgrade.enabled=true` to have the operator also check whether the cluster is ready for a new Kubernetes version.
@@ -17,6 +19,8 @@ The chart installs the operator, its RBAC, the reports service and, optionally, 
 helm install mirops oci://ghcr.io/miropshq/charts/mirops \
   --namespace mirops --create-namespace --version 0.2.0
 ```
+
+The same command is on the chart's [Artifact Hub](https://artifacthub.io/packages/helm/mirops-operator/mirops) page (**Install**), with every value, the CRDs and each version's changes. It's an OCI chart, so there's no `helm repo add`.
 
 From a checkout of this repository:
 

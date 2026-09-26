@@ -6,7 +6,7 @@ This directory contains Helm charts for installing Mirops components on Kubernet
 
 | Chart | Description |
 | ----- | ----------- |
-| `mirops-operator` | Deploys the Mirops operator: the always-on ClusterMirror, plus opt-in upgrade analysis |
+| `mirops-operator` | Deploys the Mirops operator: the always-on ClusterMirror, plus opt-in upgrade analysis · [Artifact Hub](https://artifacthub.io/packages/helm/mirops-operator/mirops) |
 
 ## Requirements
 
@@ -21,7 +21,7 @@ From this directory:
 helm install mirops ./mirops-operator --namespace mirops --create-namespace
 ```
 
-From the published OCI repository:
+From the published OCI repository — also listed on [Artifact Hub](https://artifacthub.io/packages/helm/mirops-operator/mirops):
 
 ```sh
 helm install mirops oci://ghcr.io/miropshq/charts/mirops \
