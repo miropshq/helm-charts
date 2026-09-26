@@ -4,6 +4,7 @@ description: A Helm chart for mirops - an always-on mirror of your Kubernetes cl
 type: application
 version: 0.2.0
 appVersion: "0.2.0"
+icon: https://raw.githubusercontent.com/miropshq/mirops-headlamp-plugin/main/docs/logo.png
 keywords:
   - kubernetes
   - operator
@@ -14,3 +15,70 @@ maintainers:
 home: https://github.com/miropshq/mirops
 sources:
   - https://github.com/miropshq/mirops
+  - https://github.com/miropshq/helm-charts
+# Artifact Hub reads these annotations from the published chart (oci://ghcr.io/miropshq/charts/mirops).
+# Keep artifacthub.io/images in step with the image tags in values.yaml — the release workflow checks
+# it — and replace artifacthub.io/changes on every release.
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/category: monitoring-logging
+  artifacthub.io/operator: "true"
+  artifacthub.io/operatorCapabilities: Deep Insights
+  artifacthub.io/links: |
+    - name: Documentation
+      url: https://github.com/miropshq/mirops-docs
+    - name: Operator source
+      url: https://github.com/miropshq/mirops
+    - name: CLI
+      url: https://github.com/miropshq/mirops-cli
+    - name: Headlamp plugin
+      url: https://github.com/miropshq/mirops-headlamp-plugin
+  artifacthub.io/images: |
+    - name: operator
+      image: ghcr.io/miropshq/mirops/operator:v0.2.0
+    - name: remediation
+      image: ghcr.io/miropshq/mirops/remediation:v0.2.0
+  # The operator installs these CRDs itself at startup; the chart doesn't ship them.
+  artifacthub.io/crds: |
+    - kind: ClusterMirror
+      version: v1
+      name: clustermirrors.mirops.mirops.io
+      displayName: ClusterMirror
+      description: The always-on mirror of the cluster — its dependency graph and current risk per namespace, rebuilt on an interval.
+    - kind: UpgradeAnalysis
+      version: v1
+      name: upgradeanalyses.mirops.mirops.io
+      displayName: UpgradeAnalysis
+      description: Whether the cluster is ready for a target Kubernetes version — a readiness score and a SAFE / WARNING / CRITICAL verdict. Needs upgrade.enabled=true.
+    - kind: RemediationPlan
+      version: v1
+      name: remediationplans.mirops.mirops.io
+      displayName: RemediationPlan
+      description: AI-proposed fixes from an UpgradeAnalysis, executed only after approval. Created by the operator.
+  artifacthub.io/crdsExamples: |
+    - apiVersion: mirops.mirops.io/v1
+      kind: ClusterMirror
+      metadata:
+        name: default
+      spec:
+        scope:
+          mode: all
+        refresh:
+          interval: 5m
+    - apiVersion: mirops.mirops.io/v1
+      kind: UpgradeAnalysis
+      metadata:
+        name: to-1-35
+      spec:
+        targetVersion: "1.35"
+  artifacthub.io/changes: |
+    - kind: added
+      description: ClusterMirror, an always-on mirror of the cluster's dependency graph and current risk
+    - kind: added
+      description: upgrade.enabled value to turn upgrade analysis on
+    - kind: changed
+      description: Upgrade analysis is off by default; set upgrade.enabled=true to keep analysing upgrades
+    - kind: changed
+      description: The chart creates no ClusterMirror or UpgradeAnalysis; the install notes show how to create one
+    - kind: added
+      description: RBAC for clustermirrors

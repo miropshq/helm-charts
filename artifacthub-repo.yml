@@ -1,0 +1,13 @@
+# Artifact Hub repository metadata (ownership / Verified Publisher) for the mirops chart.
+#
+# The chart is published as OCI (oci://ghcr.io/miropshq/charts/mirops), so Artifact Hub reads it
+# from the registry, not from git. The release workflow pushes this file next to the chart as the
+# `artifacthub.io` tag (ghcr.io/miropshq/charts/mirops:artifacthub.io) on every release — nothing is
+# committed to main or to any branch. repositoryID comes from the repository registered under the
+# "mirops" organization on artifacthub.io; the owner email must match an Artifact Hub user.
+repositoryID: 0381c179-7948-4786-aa5f-8b01bda5c307
+owners:
+  - name: Enrique Cruz
+    email: enrique@mirops.com
+  - name: Mario Flores
+    email: mario@mirops.com
