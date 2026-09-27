@@ -1,6 +1,6 @@
 # Mirops Helm Charts
 
-This directory contains Helm charts for installing Mirops components on Kubernetes.
+Helm charts for **Mirops** — the live Kubernetes Cluster Mirror: a dependency graph of your cluster, the blast radius of whatever is down, and the risk per namespace, rebuilt continuously. Upgrade analysis is opt-in.
 
 ## Charts
 

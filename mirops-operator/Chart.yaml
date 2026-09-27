@@ -8,6 +8,9 @@ icon: https://raw.githubusercontent.com/miropshq/mirops-headlamp-plugin/main/doc
 keywords:
   - kubernetes
   - operator
+  - cluster-mirror
+  - dependency-graph
+  - blast-radius
   - upgrade-analysis
   - dependency-graph
 maintainers:
