@@ -59,6 +59,9 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        # UpgradeAnalysis is opt-in: the controller only runs when this is "true".
+        - name: MIROPS_UPGRADE_ENABLED
+          value: {{ .Values.upgrade.enabled | quote }}
         ports:
         - name: metrics
           containerPort: {{ .Values.metrics.port }}
