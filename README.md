@@ -1,56 +1,58 @@
-# Mirops Helm Charts
+# Mirops Helm charts
 
-Deploy Mirops with a chart that keeps the operational path simple: install the operator, create a `ClusterMirror`, and inspect an always-current view of cluster risk.
+Deploy the Mirops Kubernetes Upgrade Analysis operator with Helm. This repository packages the operator, its report endpoint, optional remediation manager, and compatibility-matrix publishing hook.
 
 ```mermaid
 flowchart LR
-  H[Helm chart] --> O[Mirops operator]
-  O --> M[ClusterMirror]
-  M --> R[.mirops report]
-  R --> C[CLI]
-  R --> U[Headlamp plugin]
+  H[Helm chart] --> O[Upgrade Analysis operator]
+  O --> A[UpgradeAnalysis]
+  O --> R[Report service]
+  O --> RP[RemediationPlan manager]
+  R --> CLI[mirops CLI]
+  R --> UI[Headlamp plugin]
+  OCI[Compatibility snapshot] -. optional pinned pull .-> H
 ```
 
-## What is here
+## Chart
 
-| Chart | Purpose |
-| --- | --- |
-| [`mirops-operator`](mirops-operator/) | Installs the operator, report service, RBAC, service accounts, and optional upgrade-analysis support. |
+| Chart | Chart version | Purpose |
+| --- | --- | --- |
+| [`mirops-operator`](mirops-operator/) | `0.1.0` | Installs the operator and associated report/remediation services. |
 
-The chart is part of the open Mirops ecosystem. Review the chart values before using it in a production cluster, and contribute improvements through a focused pull request.
+The chart source and defaults are in [`mirops-operator/`](mirops-operator/). Review those values before deploying to a cluster; in particular, choose an intentional compatibility snapshot and report-storage destination.
 
-## Quick start
+## Install
 
-Install from this checkout:
+From this checkout:
 
 ```sh
-helm install mirops ./mirops-operator \
+helm upgrade --install mirops ./mirops-operator \
   --namespace mirops \
   --create-namespace
 ```
 
-Or install a published release:
+Or install the published chart (substitute a released chart version):
 
 ```sh
-helm install mirops oci://ghcr.io/miropshq/charts/mirops \
+helm upgrade --install mirops oci://ghcr.io/miropshq/charts/mirops \
   --namespace mirops \
   --create-namespace \
   --version <chart-version>
 ```
 
-Then create a `ClusterMirror` using the operator documentation. Upgrade analysis remains opt-in through `upgrade.enabled`; the mirror remains useful without it.
+The operator’s `UpgradeAnalysis` and `RemediationPlan` CRDs must be installed before creating those resources. See the [operator installation guide](https://github.com/miropshq/mirops#install) and [`mirops-operator/README.md`](mirops-operator/README.md) for the full setup and configuration reference.
 
-## Day-two operations
+## Render, inspect, and remove
 
 ```sh
-helm upgrade mirops ./mirops-operator --namespace mirops
-helm template mirops ./mirops-operator --namespace mirops
 helm lint ./mirops-operator
+helm template mirops ./mirops-operator --namespace mirops
+helm upgrade mirops ./mirops-operator --namespace mirops
 helm uninstall mirops --namespace mirops
 ```
 
-For values, cloud identity examples, compatibility-matrix pinning, and verification commands, see the [chart README](mirops-operator/README.md).
+Use a single namespace-creation mechanism: `--create-namespace` (shown above), or `namespace.create=true` in values—not both. For reproducible deployments, pin image and compatibility-matrix versions instead of relying on moving tags.
 
-## Contributing
+## Contribute
 
-Keep changes reviewable, render the chart locally, and do not make the chart claim capabilities that the operator does not ship. See [CONTRIBUTING.md](CONTRIBUTING.md) for the project workflow and [LICENSE](LICENSE) for licensing.
+Keep chart changes aligned with the operator code and defaults, and include rendered-manifest or lint evidence in focused pull requests. See [CONTRIBUTING.md](CONTRIBUTING.md) and the repository’s [Apache-2.0 license](LICENSE).
