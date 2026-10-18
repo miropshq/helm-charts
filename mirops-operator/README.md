@@ -1,36 +1,30 @@
-# Mirops Operator Helm Chart
+# Mirops Operator chart
 
-This Helm chart deploys the Mirops Kubernetes upgrade-analysis operator.
+The `mirops-operator` chart is the Helm entry point for Mirops: it deploys the operator, report service, identities, and permissions needed to maintain a Kubernetes Cluster Mirror.
 
-The operator watches `UpgradeAnalysis` resources, collects cluster readiness signals, computes an upgrade-risk score, and writes a report that can be consumed by `mirops-cli`.
-
-## Requirements
-
-- Kubernetes 1.20 or newer
-- Helm 3.x
-- A reachable Mirops operator image
+```mermaid
+flowchart LR
+  I[helm install] --> O[Operator]
+  O --> CM[ClusterMirror]
+  CM --> RR[Report service]
+  RR --> CLI[mirops CLI]
+  RR --> UI[Headlamp]
+```
 
 ## Install
 
-Install with default values:
-
 ```sh
-helm install mirops ./mirops-operator --namespace mirops --create-namespace
-```
-
-> **Namespace — one knob.** Let Helm create the namespace with `--create-namespace` (Terraform: `create_namespace = true`). That's the only setting you need, and it works for every case, including `compatMatrix` (whose pre-install hook needs the namespace to exist first). The chart does **not** create the namespace by default (`namespace.create=false`) — set `namespace.create=true` only if you want the chart to own the Namespace resource, and then do **not** also pass `--create-namespace` (they'd collide).
-
-Install with a custom image:
-
-```sh
-helm install mirops ./mirops-operator \
+helm upgrade --install mirops oci://ghcr.io/miropshq/charts/mirops \
   --namespace mirops \
   --create-namespace \
-  --set image.repository=<registry>/mirops \
-  --set image.tag=<tag>
+  --version <chart-version>
 ```
 
-## Verify
+For a local checkout, replace the OCI reference with `./mirops-operator`.
+
+Use one namespace-creation mechanism: pass `--create-namespace` (recommended), or set `namespace.create=true`; do not use both.
+
+## Verify the installation
 
 ```sh
 kubectl get pods -n mirops
@@ -38,144 +32,41 @@ kubectl get deployment -n mirops
 kubectl logs -n mirops deployment/mirops-controller-manager
 ```
 
-## Create An Analysis
+Create a `ClusterMirror` after the operator is running. Upgrade analysis is an optional operation on that mirror, enabled with `upgrade.enabled` when required.
 
-```yaml
-apiVersion: mirops.mirops.io/v1
-kind: UpgradeAnalysis
-metadata:
-  name: upgrade-check
-  namespace: mirops
-spec:
-  targetVersion: "1.29"
-  scope:
-    mode: application
-  source:
-    type: file
-    path: /tmp/mirops-report.json
+## Important values
+
+| Value | Default | Why it matters |
+| --- | --- | --- |
+| `image.repository` / `image.tag` | chart defaults | Select the operator image to run. |
+| `namespace.create` | `false` | Lets the chart own the namespace; do not combine with `--create-namespace`. |
+| `compatMatrix.enabled` | `false` | Pull a compatibility snapshot rather than using the image’s embedded snapshot. |
+| `compatMatrix.version` | `latest` | Use a dated tag in production for reproducible results. |
+| `upgrade.enabled` | `false` | Turns on opt-in upgrade analysis. |
+
+### Compatibility snapshots
+
+```mermaid
+flowchart LR
+  E[Embedded matrix] --> O[Operator]
+  P[Pinned OCI matrix] -->|compatMatrix.enabled| CM[ConfigMap]
+  CM --> O
 ```
 
-Apply it:
+Leave the embedded matrix in place for air-gapped environments. When using OCI snapshots, pin a date tag in production so an analysis remains reproducible.
 
-```sh
-kubectl apply -f upgrade-analysis.yaml
-kubectl get upgradeanalysis -n mirops
-kubectl describe upgradeanalysis upgrade-check -n mirops
-```
+## Cloud workload identity
 
-## Values
+Use service-account annotations for the cloud identity already configured in your cluster: IRSA on EKS and Workload Identity on AKS. Keep credentials in Kubernetes Secrets only when workload identity is unavailable.
 
-| Value | Default | Description |
-| ----- | ------- | ----------- |
-| `namespace.create` | `false` | Let the chart own the Namespace resource. Keep `false` and use Helm's `--create-namespace` instead (one knob). Don't combine `true` with `--create-namespace`. |
-| `namespace.name` | `mirops` | Namespace name used by chart resources |
-| `image.repository` | `ghcr.io/miropshq/mirops` | Operator image repository |
-| `image.tag` | `latest` | Operator image tag |
-| `image.pullPolicy` | `IfNotPresent` | Image pull policy |
-| `imagePullSecrets` | `[]` | Existing image pull secrets |
-| `replicaCount` | `1` | Number of operator replicas |
-| `serviceAccount.create` | `true` | Create a service account |
-| `serviceAccount.name` | `mirops-controller-manager` | Service account name |
-| `serviceAccount.annotations` | `{}` | Service account annotations |
-| `rbac.create` | `true` | Create RBAC resources |
-| `podAnnotations` | `{}` | Pod annotations |
-| `podSecurityContext.runAsNonRoot` | `true` | Run pod as non-root |
-| `podSecurityContext.runAsUser` | `65532` | User ID for the pod |
-| `securityContext.allowPrivilegeEscalation` | `false` | Disable privilege escalation |
-| `securityContext.readOnlyRootFilesystem` | `true` | Use a read-only root filesystem |
-| `resources.requests.cpu` | `100m` | CPU request |
-| `resources.requests.memory` | `64Mi` | Memory request |
-| `resources.limits.cpu` | `500m` | CPU limit |
-| `resources.limits.memory` | `128Mi` | Memory limit |
-| `nodeSelector` | `{}` | Node selector |
-| `tolerations` | `[]` | Pod tolerations |
-| `affinity` | `{}` | Pod affinity |
-| `metrics.enabled` | `true` | Enable metrics service |
-| `metrics.port` | `8080` | Metrics port |
-| `healthProbe.port` | `8081` | Health probe port |
-| `report.path` | `/tmp/mirops-report.json` | Default local report path |
-| `leaderElection.enabled` | `true` | Enable leader election |
-| `logLevel` | `info` | Operator log level |
-| `compatMatrix.enabled` | `false` | Pull a published compatibility-matrix version (off → use the operator's embedded matrix) |
-| `compatMatrix.repo` | `ghcr.io/miropshq/mirops-compat` | OCI repo for the matrix artifact |
-| `compatMatrix.version` | `latest` | Matrix version: `latest`, or a date tag like `v2026.06.15` |
-| `compatMatrix.orasImage` | `ghcr.io/oras-project/oras:v1.2.0` | Image used by the pull Job |
-| `compatMatrix.kubectlImage` | `alpine/k8s:1.31.0` | Image used to write the ConfigMap (must include a shell — distroless kubectl images won't work) |
-
-## Compatibility matrix version
-
-By default the operator uses its **embedded** matrix (baked into the image at build) — deterministic and offline-safe. To **decouple the matrix from the operator image** and update it without rebuilding, enable `compatMatrix`: a pre-install/pre-upgrade hook Job pulls the chosen version into the `mirops-compatibility-matrix` ConfigMap the operator reads.
-
-> Because the pull runs as a **pre-install hook** (before the chart's normal resources), the namespace must already exist. Install with **`--create-namespace`** so Helm creates it first (the chart's default `namespace.create=false` already keeps it from creating a second one).
-
-```sh
-# always the newest matrix (non-prod / stay current)
-helm upgrade --install mirops oci://ghcr.io/miropshq/charts/mirops \
-  --namespace mirops --create-namespace \
-  --set compatMatrix.enabled=true --set compatMatrix.version=latest
-
-# pin a date tag (reproducible; recommended for production)
-helm upgrade --install mirops oci://ghcr.io/miropshq/charts/mirops \
-  --namespace mirops --create-namespace \
-  --set compatMatrix.enabled=true --set compatMatrix.version=v2026.06.15
-```
-
-> Keep `latest` for non-production and **pin a date** in production, so the upgrade verdict stays reproducible. For air-gapped clusters, leave `compatMatrix.enabled=false` and rely on the embedded matrix.
-
-### Inspecting what a matrix version covers
-
-A matrix version is a frozen snapshot of every add-on rule (`addonRange` → `k8sRange`) at that date. To see what a tag covers, pull it and read `matrix.yaml`:
-
-```sh
-# a pinned date
-oras pull ghcr.io/miropshq/mirops-compat:v2026.08.30 --output ./matrix
-cat ./matrix/dist/matrix.yaml
-
-# or the moving 'latest'
-oras pull ghcr.io/miropshq/mirops-compat:latest --output ./matrix
-cat ./matrix/dist/matrix.yaml
-```
-
-Once installed with `compatMatrix.enabled=true`, the same content lives in the ConfigMap the operator reads:
-
-```sh
-kubectl get configmap mirops-compatibility-matrix -n mirops -o jsonpath='{.data.matrix\.yaml}'
-```
-
-## Azure Workload Identity
-
-On AKS, set the pod label and the identity client-id (and, when the cluster's default OIDC tenant isn't the identity's — e.g. cross-tenant — the tenant-id):
-
-```sh
-helm upgrade --install mirops oci://ghcr.io/miropshq/charts/mirops -n mirops \
-  --set-string podLabels."azure\.workload\.identity/use"=true \
-  --set serviceAccount.annotations."azure\.workload\.identity/client-id"=<client-id> \
-  --set serviceAccount.annotations."azure\.workload\.identity/tenant-id"=<tenant-id>   # optional
-```
-
-For AWS EKS use IRSA instead: `--set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=<role-arn>`.
-
-## Upgrade
-
-```sh
-helm upgrade mirops ./mirops-operator --namespace mirops
-```
-
-## Uninstall
-
-```sh
-helm uninstall mirops --namespace mirops
-```
-
-If the chart created the namespace and no other resources depend on it, delete it manually when needed:
-
-```sh
-kubectl delete namespace mirops
-```
-
-## Render Or Lint
+## Maintain the chart
 
 ```sh
 helm template mirops ./mirops-operator --namespace mirops
 helm lint ./mirops-operator
+helm upgrade mirops ./mirops-operator --namespace mirops
+helm uninstall mirops --namespace mirops
 ```
+
+This chart is open source; see the repository [LICENSE](../LICENSE) and contribution guidance before submitting a change.
+
