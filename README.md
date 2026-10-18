@@ -1,76 +1,53 @@
-# Mirops Helm Charts
+# Mirops Helm charts
 
-This directory contains Helm charts for installing Mirops components on Kubernetes.
+Deploy the Mirops Kubernetes Upgrade Analysis operator with Helm. This repository packages the operator, its report endpoint, optional remediation manager, and compatibility-matrix publishing hook.
 
-## Charts
+![Mirops Helm chart architecture, including the operator, report service, and report consumers](docs/images/readme-chart-architecture.svg)
 
-| Chart | Description |
-| ----- | ----------- |
-| `mirops-operator` | Deploys the Mirops Kubernetes upgrade-analysis operator |
+## Chart
 
-## Requirements
+| Chart | Chart version | Purpose |
+| --- | --- | --- |
+| [`mirops-operator`](mirops-operator/) | `0.1.0` | Installs the operator and associated report/remediation services. |
 
-- Kubernetes 1.20 or newer
-- Helm 3.x
-- A published Mirops operator image, or access to build and push one
+The chart source and defaults are in [`mirops-operator/`](mirops-operator/). Review those values before deploying to a cluster; in particular, choose an intentional compatibility snapshot and report-storage destination.
 
-## Install The Operator
+## Install
 
-From this directory:
+From this checkout:
 
 ```sh
-helm install mirops ./mirops-operator --namespace mirops --create-namespace
+helm upgrade --install mirops ./mirops-operator \
+  --namespace mirops \
+  --create-namespace
 ```
 
-From the published OCI repository:
+Or install the published chart (substitute a released chart version):
 
 ```sh
-helm install mirops oci://ghcr.io/miropshq/charts/mirops \
+helm upgrade --install mirops oci://ghcr.io/miropshq/charts/mirops \
   --namespace mirops \
   --create-namespace \
-  --version 0.1.0
+  --version <chart-version>
 ```
 
-The chart publishes from `main`:
+The operator’s `UpgradeAnalysis` and `RemediationPlan` CRDs must be installed before creating those resources. See the [operator installation guide](https://github.com/miropshq/mirops#install) and [`mirops-operator/README.md`](mirops-operator/README.md) for the full setup and configuration reference.
 
-| Branch | Chart repo | Default image tag |
-| ------ | ---------- | ----------------- |
-| `main` | `charts` | `appVersion` from `Chart.yaml`, currently `0.1.0` |
+![Helm installation flow from choosing a chart version to creating analysis resources](docs/images/readme-install-flow.svg)
 
-Use a custom image:
-
-```sh
-helm install mirops ./mirops-operator \
-  --namespace mirops \
-  --create-namespace \
-  --set image.repository=<registry>/mirops \
-  --set image.tag=<tag>
-```
-
-## Upgrade
-
-```sh
-helm upgrade mirops ./mirops-operator --namespace mirops
-```
-
-## Uninstall
-
-```sh
-helm uninstall mirops --namespace mirops
-```
-
-## Development
-
-Render the chart locally:
-
-```sh
-helm template mirops ./mirops-operator --namespace mirops
-```
-
-Lint the chart:
+## Render, inspect, and remove
 
 ```sh
 helm lint ./mirops-operator
+helm template mirops ./mirops-operator --namespace mirops
+helm upgrade mirops ./mirops-operator --namespace mirops
+helm uninstall mirops --namespace mirops
 ```
 
-See `mirops-operator/README.md` for chart-specific values and examples.
+Use a single namespace-creation mechanism: `--create-namespace` (shown above), or `namespace.create=true` in values—not both. For reproducible deployments, pin image and compatibility-matrix versions instead of relying on moving tags.
+
+![Chart validation workflow from lint and rendered manifest review through upgrade and cleanup](docs/images/readme-chart-workflow.svg)
+
+## Contribute
+
+Keep chart changes aligned with the operator code and defaults, and include rendered-manifest or lint evidence in focused pull requests. See [CONTRIBUTING.md](CONTRIBUTING.md) and the repository’s [Apache-2.0 license](LICENSE).
