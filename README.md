@@ -2,16 +2,7 @@
 
 Deploy the Mirops Kubernetes Upgrade Analysis operator with Helm. This repository packages the operator, its report endpoint, optional remediation manager, and compatibility-matrix publishing hook.
 
-```mermaid
-flowchart LR
-  H[Helm chart] --> O[Upgrade Analysis operator]
-  O --> A[UpgradeAnalysis]
-  O --> R[Report service]
-  O --> RP[RemediationPlan manager]
-  R --> CLI[mirops CLI]
-  R --> UI[Headlamp plugin]
-  OCI[Compatibility snapshot] -. optional pinned pull .-> H
-```
+![Mirops Helm chart architecture, including the operator, report service, and report consumers](docs/images/readme-chart-architecture.svg)
 
 ## Chart
 
@@ -42,6 +33,8 @@ helm upgrade --install mirops oci://ghcr.io/miropshq/charts/mirops \
 
 The operator’s `UpgradeAnalysis` and `RemediationPlan` CRDs must be installed before creating those resources. See the [operator installation guide](https://github.com/miropshq/mirops#install) and [`mirops-operator/README.md`](mirops-operator/README.md) for the full setup and configuration reference.
 
+![Helm installation flow from choosing a chart version to creating analysis resources](docs/images/readme-install-flow.svg)
+
 ## Render, inspect, and remove
 
 ```sh
@@ -52,6 +45,8 @@ helm uninstall mirops --namespace mirops
 ```
 
 Use a single namespace-creation mechanism: `--create-namespace` (shown above), or `namespace.create=true` in values—not both. For reproducible deployments, pin image and compatibility-matrix versions instead of relying on moving tags.
+
+![Chart validation workflow from lint and rendered manifest review through upgrade and cleanup](docs/images/readme-chart-workflow.svg)
 
 ## Contribute
 
