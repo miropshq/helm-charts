@@ -13,7 +13,7 @@
   apiVersion: mirops.mirops.io/v1
   kind: ClusterMirror
   metadata:
-    name: default                     # the Headlamp plugin opens "default" first
+    name: default
   spec:
     scope:
       mode: all                       # all | application (application excludes system namespaces)
@@ -23,7 +23,7 @@
     #   type: s3
     #   bucket: my-bucket
     #   region: us-east-1
-    #   key: mirops/default.mirror
+    #   key: mirops/default.mirops
   EOF
   kubectl get clustermirror
   kubectl get clustermirror default -o jsonpath='{.status.byNamespace}'
@@ -75,7 +75,7 @@ To analyse a Kubernetes version upgrade, enable it and then follow steps 4-9:
 
 7. Read the full reports. The reports service serves both, wherever they are stored (port {{ .Values.reports.port }}):
   kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "mirops.fullname" . }}-reports {{ .Values.reports.port }}:{{ .Values.reports.port }}
-  curl http://localhost:{{ .Values.reports.port }}/reports/default.mirror | jq '.summary, .atRisk'
+  curl "http://localhost:{{ .Values.reports.port }}/reports/default.mirops?kind=ClusterMirror" | jq '.summary, .atRisk'
   curl http://localhost:{{ .Values.reports.port }}/reports/cluster-analysis.mirops | jq '.decision, .addons'
 
 8. Review and approve the AI-proposed remediation (when ai.remediation.enabled is true):

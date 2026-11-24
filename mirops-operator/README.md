@@ -17,18 +17,10 @@ The chart installs the operator, its RBAC, the reports service, the optional rem
 
 ```sh
 helm install mirops oci://ghcr.io/miropshq/charts/mirops \
-  --namespace mirops --create-namespace --version 0.2.0
+  --namespace mirops --create-namespace --version 0.2.1
 ```
 
 The same command is on the chart's [Artifact Hub](https://artifacthub.io/packages/helm/mirops-operator/mirops) page (**Install**), with every value, the CRDs and each version's changes. Name the release `mirops` and install it in the `mirops` namespace, as above: every name the chart creates starts with the release name. It's an OCI chart, so there's no `helm repo add`.
-
-> **Operator version.** Chart 0.2.0 installs operator `v0.2.0` by default, which names a ClusterMirror's report `<name>.mirror`. Operator `v0.2.1` names every report `<name>.mirops` and is the one the current CLI and Headlamp plugin expect. To install it with this chart:
->
-> ```sh
-> helm install mirops oci://ghcr.io/miropshq/charts/mirops \
->   --namespace mirops --create-namespace --version 0.2.0 \
->   --set image.tag=v0.2.1 --set remediation.image.tag=v0.2.1
-> ```
 
 From a checkout of this repository:
 
@@ -120,15 +112,13 @@ To turn it off again, `--set upgrade.enabled=false`. The ClusterMirror keeps run
 
 ## Read The Reports
 
-The `mirops-reports` service serves both reports, wherever they're stored — `file` from the pod, `s3`/`blob`/`pvc` read back with the operator's own credentials. With operator `v0.2.1`, every report is `<name>.mirops`, and `?kind=ClusterMirror` asks for a mirror's:
+The `mirops-reports` service serves both reports, wherever they're stored — `file` from the pod, `s3`/`blob`/`pvc` read back with the operator's own credentials. Every report is `<name>.mirops`, and `?kind=ClusterMirror` asks for a mirror's:
 
 ```sh
 kubectl port-forward -n mirops svc/mirops-reports 8084:8084
 curl "http://localhost:8084/reports/default.mirops?kind=ClusterMirror"
 curl http://localhost:8084/reports/upgrade-check.mirops
 ```
-
-With operator `v0.2.0` (the chart's default image), the mirror's report is `default.mirror`.
 
 ## Values
 
@@ -137,7 +127,7 @@ With operator `v0.2.0` (the chart's default image), the mirror's report is `defa
 | `namespace.create` | `false` | Let the chart own the Namespace resource. Keep `false` and use Helm's `--create-namespace` instead (one knob). Don't combine `true` with `--create-namespace`. |
 | `namespace.name` | `mirops` | Namespace name used by chart resources |
 | `image.repository` | `ghcr.io/miropshq/mirops/operator` | Operator image repository |
-| `image.tag` | `v0.2.0` | Operator image tag (also selects the CRDs the operator installs) |
+| `image.tag` | `v0.2.1` | Operator image tag (also selects the CRDs the operator installs) |
 | `image.pullPolicy` | `IfNotPresent` | Image pull policy |
 | `upgrade.enabled` | `false` | Run the `UpgradeAnalysis` controller (upgrade-readiness analysis). The ClusterMirror controller always runs. |
 | `imagePullSecrets` | `[]` | Existing image pull secrets (the images are public) |
@@ -180,7 +170,7 @@ With operator `v0.2.0` (the chart's default image), the mirror's report is `defa
 | `compatMatrix.kubectlImage` | `alpine/k8s:1.31.0` | Image used to write the ConfigMap (must include a shell — distroless kubectl images won't work) |
 | `remediation.enabled` | `true` | Deploy the remediation manager (executes approved RemediationPlans) |
 | `remediation.image.repository` | `ghcr.io/miropshq/mirops/remediation` | Remediation manager image repository |
-| `remediation.image.tag` | `v0.2.0` | Remediation manager image tag |
+| `remediation.image.tag` | `v0.2.1` | Remediation manager image tag |
 
 See the complete, commented [`values.yaml`](values.yaml) for probes, leader election, image-pull settings and the remediation manager's own resources.
 
@@ -251,8 +241,12 @@ Where a workload identity isn't available, a ClusterMirror or UpgradeAnalysis `s
 ## Upgrade
 
 ```sh
-helm upgrade mirops oci://ghcr.io/miropshq/charts/mirops --namespace mirops --version 0.2.0 --reuse-values
+helm upgrade mirops oci://ghcr.io/miropshq/charts/mirops --namespace mirops --version 0.2.1 --reset-then-reuse-values
 ```
+
+`--reset-then-reuse-values` (Helm 3.14 or newer) keeps the values you set and takes every other default — the image tags included — from the new chart. `--reuse-values` would keep the old chart's defaults, and with them operator v0.2.0.
+
+Upgrading from 0.2.0 switches the operator to v0.2.1: a ClusterMirror's report becomes `<name>.mirops` (it was `<name>.mirror`), so point anything that reads it — a pipeline's `MIROPS_SOURCE`, for one — at the new name. A mirror with its own `key` / `blobName` keeps that name.
 
 Upgrading from 0.1.0 needs nothing else: the new operator installs the `ClusterMirror` CRD at startup, and upgrade analysis is now off unless you set `upgrade.enabled=true` — set it if you already run UpgradeAnalyses.
 
