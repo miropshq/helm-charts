@@ -6,7 +6,7 @@ Helm charts for **Mirops** — the live Kubernetes Cluster Mirror: a dependency 
 
 | Chart | Chart version | Purpose |
 | --- | --- | --- |
-| [`mirops-operator`](mirops-operator/) (published as `mirops`) | `0.2.0` | Installs the operator — the always-on ClusterMirror, plus opt-in upgrade analysis — its report service and the optional remediation manager. On [Artifact Hub](https://artifacthub.io/packages/helm/mirops-operator/mirops). |
+| [`mirops-operator`](mirops-operator/) (published as `mirops`) | `0.2.1` | Installs the operator — the always-on ClusterMirror, plus opt-in upgrade analysis — its report service and the optional remediation manager. On [Artifact Hub](https://artifacthub.io/packages/helm/mirops-operator/mirops). |
 
 The chart creates no `ClusterMirror` or `UpgradeAnalysis`: install it, then create a ClusterMirror. The operator installs its own CRDs at startup, so there's no separate CRD step.
 
@@ -16,7 +16,7 @@ From the published OCI repository — it's an OCI chart, so there's no `helm rep
 
 ```sh
 helm install mirops oci://ghcr.io/miropshq/charts/mirops \
-  --namespace mirops --create-namespace --version 0.2.0
+  --namespace mirops --create-namespace --version 0.2.1
 ```
 
 From this checkout:

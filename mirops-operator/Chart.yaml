@@ -2,8 +2,8 @@ apiVersion: v2
 name: mirops
 description: A Helm chart for mirops - an always-on mirror of your Kubernetes cluster's dependencies and risk, with opt-in upgrade analysis
 type: application
-version: 0.2.0
-appVersion: "0.2.0"
+version: 0.2.1
+appVersion: "0.2.1"
 icon: https://raw.githubusercontent.com/miropshq/mirops-headlamp-plugin/main/docs/logo.png
 keywords:
   - kubernetes
@@ -12,7 +12,6 @@ keywords:
   - dependency-graph
   - blast-radius
   - upgrade-analysis
-  - dependency-graph
 maintainers:
   - name: Mirops Team
 home: https://github.com/miropshq/mirops
@@ -29,7 +28,7 @@ annotations:
   artifacthub.io/operatorCapabilities: Deep Insights
   artifacthub.io/links: |
     - name: Documentation
-      url: https://github.com/miropshq/mirops-docs
+      url: https://docs.mirops.com
     - name: Operator source
       url: https://github.com/miropshq/mirops
     - name: CLI
@@ -38,9 +37,9 @@ annotations:
       url: https://github.com/miropshq/mirops-headlamp-plugin
   artifacthub.io/images: |
     - name: operator
-      image: ghcr.io/miropshq/mirops/operator:v0.2.0
+      image: ghcr.io/miropshq/mirops/operator:v0.2.1
     - name: remediation
-      image: ghcr.io/miropshq/mirops/remediation:v0.2.0
+      image: ghcr.io/miropshq/mirops/remediation:v0.2.1
   # The operator installs these CRDs itself at startup; the chart doesn't ship them.
   artifacthub.io/crds: |
     - kind: ClusterMirror
@@ -75,13 +74,9 @@ annotations:
       spec:
         targetVersion: "1.35"
   artifacthub.io/changes: |
-    - kind: added
-      description: ClusterMirror, an always-on mirror of the cluster's dependency graph and current risk
-    - kind: added
-      description: upgrade.enabled value to turn upgrade analysis on
     - kind: changed
-      description: Upgrade analysis is off by default; set upgrade.enabled=true to keep analysing upgrades
-    - kind: changed
-      description: The chart creates no ClusterMirror or UpgradeAnalysis; the install notes show how to create one
-    - kind: added
-      description: RBAC for clustermirrors
+      description: Installs operator v0.2.1 by default — every report, a ClusterMirror's included, is <name>.mirops (v0.2.0 wrote <name>.mirror)
+    - kind: fixed
+      description: The install notes write and read the mirror's report as default.mirops
+    - kind: fixed
+      description: The Documentation link points to docs.mirops.com

@@ -85,7 +85,23 @@ jobs:
             --username ${{ github.actor }} \
             --password ${{ secrets.GITHUB_TOKEN }}
 
+      # A published version never changes: a merge that doesn't bump Chart.yaml's version (docs, CI)
+      # publishes nothing. Artifact Hub wouldn't re-read an overwritten version anyway.
+      - name: Skip if this version is already published
+        id: published
+        working-directory: ${{ env.CHART_DIR }}
+        run: |
+          CHART_VERSION=$(grep "^version:" Chart.yaml | awk '{print $2}')
+          CHART_NAME=$(grep "^name:" Chart.yaml | awk '{print $2}')
+          if helm show chart oci://ghcr.io/${{ github.repository_owner }}/charts/${CHART_NAME} --version ${CHART_VERSION} >/dev/null 2>&1; then
+            echo "${CHART_NAME} ${CHART_VERSION} is already published — nothing to do."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and push Helm chart
+        if: steps.published.outputs.exists == 'false'
         working-directory: ${{ env.CHART_DIR }}
         run: |
           CHART_VERSION=$(grep "^version:" Chart.yaml | awk '{print $2}')
@@ -102,6 +118,7 @@ jobs:
         uses: oras-project/setup-oras@v1
 
       - name: Publish Artifact Hub repository metadata
+        if: steps.published.outputs.exists == 'false'
         run: |
           CHART_NAME=$(grep "^name:" ${{ env.CHART_DIR }}/Chart.yaml | awk '{print $2}')
           echo "${{ secrets.GITHUB_TOKEN }}" | oras login ghcr.io --username ${{ github.actor }} --password-stdin

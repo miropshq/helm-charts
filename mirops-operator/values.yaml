@@ -15,7 +15,7 @@ namespace:
 image:
   repository: ghcr.io/miropshq/mirops/operator
   pullPolicy: IfNotPresent
-  tag: "v0.2.0"
+  tag: "v0.2.1"
 
 # UpgradeAnalysis — opt-in upgrade-readiness mode. When false (default) the operator does not run
 # the UpgradeAnalysis controller; the ClusterMirror controller keeps running. Set true to analyse a
@@ -154,7 +154,7 @@ remediation:
   image:
     repository: ghcr.io/miropshq/mirops/remediation
     pullPolicy: IfNotPresent
-    tag: "v0.2.0"
+    tag: "v0.2.1"
 
   healthProbe:
     port: 8082
